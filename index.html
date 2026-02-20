@@ -3,41 +3,214 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte Lavado de Activos</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AML News Dashboard - Credicoop</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #004a80; --accent: #2ecc71; --bg: #f4f7f9; --text: #2c3e50; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); line-height: 1.6; margin: 0; padding: 0; }
+        header { background: var(--primary); color: white; padding: 2rem 1rem; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        header h1 { margin: 0; font-weight: 800; letter-spacing: -1px; }
+        .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+        .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s; border-left: 6px solid #d1d8e0; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .card.oficial { border-left-color: var(--accent); }
+        .card.prensa { border-left-color: #3498db; }
+        .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .badge-oficial { background: #e8f5e9; color: #2e7d32; }
+        .badge-prensa { background: #e3f2fd; color: #1565c0; }
+        h3 { margin: 0.5rem 0; font-size: 1.25rem; }
+        h3 a { color: var(--primary); text-decoration: none; }
+        .meta { font-size: 0.85rem; color: #7f8c8d; margin-bottom: 1rem; }
+        .summary { font-size: 0.95rem; color: #576574; }
+        footer { text-align: center; padding: 2rem; color: #95a5a6; font-size: 0.8rem; }
+    </style>
 </head>
 <body>
-    <h1>🗞️ Noticias Lavado de Activos</h1>
-    <p>Actualizado: 20/02/2026 20:17 (Últimos 5 días)</p>
-    <hr>
+    <header>
+        <h1>🗞️ AML News Dashboard</h1>
+        <p>Inteligencia Financiera para el Banco Credicoop | 20/02/2026 23:14</p>
+    </header>
+    <div class="container">
 
-    <div>
-        <h3><a href="https://news.google.com/rss/articles/CBMiyAFBVV95cUxQVHhYQkc2UFotNERUampiNWp3SUdsY1BadXhFT3NoS3liNnJ3ZlNUSGxyb3ltTDRIa3luQTU3N1NQTEt3OExPUXVLVzBHektCOER2N2pqbVNrNUVwWXBiaXI5OXdrellqVlY3bHY2YkY3NnRxdjhzQ2hxT3QxdDE0aHdEelJNbzlRVTNCcnJxOVloSHVnQlYzdlo0T3BURm9qdlBBNDlHWENoWmRDb1RvM2tvOENuUUhJUzdfdjV3YmJVdlpBTDNSM9IB4wFBVV95cUxQTEJKRTJ3RUpha1E3aDlTVUkzcEJXRnNOa0pXRHoxV1BXUU00ODRuN0RYOGlRX2ZkVjY5OVdYbWI0b1JnNmc3blZadl9QYWgyU3hwWlFvVWo4VUdKZmdzeHJJZkZRaGRmRkpZdzE5OXdzdE1ZZFd2OVREUDY5ZTd4R1FRUDREa2pjUEhpa0kxWndLOHlJS1EzUXRkcjRZdm15UWVZR3RRcUMxZ3doWW52eGFveHpvQUdPb2RLTjdLVHdLSUxlWG8yTjBfcEtSR1VCTlQ3dG1yTGdQeXp6MlBQMm9BTQ?oc=5" target="_blank">Imputan por lavado de dinero al exministro de Energía ucraniano Galushchenko - Infobae</a></h3>
-        <small><b>Infobae</b> | Mon, 16 Feb 2026 10:18:00 GMT</small>
-        <p>Imputan por lavado de dinero al exministro de Energía ucraniano Galushchenko  Infobae...</p>
-    </div>
-    
-    <div>
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
         <h3><a href="https://news.google.com/rss/articles/CBMiowJBVV95cUxNaUFSUjJ3NndZcGpxOUctUFNwdENqc3I1SXdDUEM1Z29jN0FaSERQVVRvUG5MZzU3X0VnMUZnaTExMFp1MThsX3YySFJSeXc4RkdjaGN5MlM2WVpqeTBOdjJHcmo3ZXBzaWRQMGVuTnBZOVdjOXBaT3dTT1RXS2YwZUozbHdUZHJfQ0tGNzM1WmFkZXlSSGFxNEtYTjZ0VGc2aHl5TUVEMlV1R2dkQVpsSWprZTdabDRmN3QtNjRnVFR4OUNPbDBrRkJoVmM0ZG1TdzVlbWlEbl9ZTHJVUEY4V2pVNk93THFXQ2didHdycUw2cEFCazhFUXFQQmloYkR4aGNJT0M2M0pCeHNYMmh5c2prM3h1YTVlSTduYjE3dlh6VVHSAb4CQVVfeXFMTkdQSmpmOUd4YmM2eExnSU8tUktScXlRZzhDNzhHTFVBOFZEbThlLUNUdkZPeFU4dTAzVVZ5MzBwejZvMEFURjZSc2RqbU4zdHdFMGdURzVPRGJ4Q2xyN2tuYi1sS0FjajZJZ1l4UjlrT2FiQVN2a0RiMmoyRU5VWmp0SUNKajJscVBsZHNMZXhHVEFfU25IOGNSbGVTLVIzMzgtMFhVc2dzWE5aY1NKZUdmcWhFbUpTSDI4YUdiNVVMYnkzU3Y2UDBzNmpjdGIzdjhSdF9Zb0pGU0x5LWVoMGpwNllqbGlWblVCVm9vSWszQ19qdXR6bE1XOHNMSVBvVG1CZ0FVODVIeEo2d3JlQURTeTJKYzBHSFhkblVlbFlYa3VTQk9sdzE5elpEcnRPVXQ0MDYtQk1YVzM5bmhB?oc=5" target="_blank">Identifican a ‘Medio Labio’ como hombre clave en el lavado de activos del Clan del Golfo: más de $137.000 millones movilizados y vínculos con redes en Europa - Infobae</a></h3>
-        <small><b>Infobae</b> | Fri, 20 Feb 2026 17:14:00 GMT</small>
-        <p>Identifican a ‘Medio Labio’ como hombre clave en el lavado de activos del Clan del Golfo: más de $137.000 millones movilizados y vínculos con redes en Europa  Infobae...</p>
+        <div class="meta">Publicado: Fri, 20 Feb 2026 17:14:00 GMT</div>
+        <div class="summary">Identifican a ‘Medio Labio’ como hombre clave en el lavado de activos del Clan del Golfo: más de $137.000 millones movilizados y vínculos con redes en Europa  Infobae...</div>
     </div>
     
-    <div>
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi9AFBVV95cUxPVF9sMF9ra2lrcEJCM1FObEhON3I0RHNsVXhZY0w2ZmFXX2R5WlhwVFMySExCUmFEbl9Jcm13NTBLSC1tbTJOZkxLcjNZTEZvTk81R1FZUldobmg2OXN1NEN2M2NOXy1XOTgyTVNMZmF6T2lMVVVQMkQ2QmlqVUttaWE2UHd4dEhEZGxNS2VxNUJ0NGlTQl9hVUVSZ3F2TGdUR2xZeXZxeTVpZzI5QWprb283YVFhU0pfcjRRTlpyOHBTbkVGbVluSy1nZ1g5OVBDNGNwLUdHTnFpRnF0bGlYeUFNV3F2eFJIeWFzMVRUWkl3TlFL0gGPAkFVX3lxTE5YeWZ1TDZSNUI4bWZPX2FhQXlUSDUwdmR3VkZUV25xS0FNMkp0VEtvV3RlbC1qT3ZKWEJmWDZCYnRpcWlseHVtSi1vZmJIb1VfSWV5N1FPQmJXb0NKNUFvMjdObzQxWDFoZEhXbVFrbDNUbVVHU0pMZUUzblFiamlqc1NWUV9pdWZCOFY3NFRnYnZBSzc5bVZITmpLbjFaWG94aEVRaFJqWGwtWGt1UElvY1pOTS0wT0RfOVRLMlVtMHg5NEYwTzJ0ZXo5ZlpjOHhXMjJyOWJ6MVljLWhmU3FDbmVkbWlpeVpiVEpGam82OU1oMTZNNFpBazZlR3ltYk1hUk1sa0ZycUpiV0hHZHM?oc=5" target="_blank">Sujeto es condenado a ocho años de prisión por lavado de activos tras intentar viajar a China con USD 50 mil sin declarar - Infobae</a></h3>
+        <div class="meta">Publicado: Thu, 19 Feb 2026 23:00:00 GMT</div>
+        <div class="summary">Sujeto es condenado a ocho años de prisión por lavado de activos tras intentar viajar a China con USD 50 mil sin declarar  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi8wFBVV95cUxPMlNCN1VGVnN0ZXhac3BFdTVDZlU2akdpU3VLWGJVbFozWWlpZUR3a2VKT2ktLW44QUFTSXpFZjYwczc1dFN2cVRBX1V6WkZIOXZ1UkJrcHRGOWFNMEtENG5PYmNnZ3VJOElXeWRPb2IteU55SmVpbk5XSzBWX3BneTNxejV3b1RvaHlZV1JROGhDTW1TRV9FdFAtV3hCeGZqeEV5cGc0ZXhXcnFuUkhVX20yMzFuVkgtNWpUY3RIV19iVVdGbnVDY3VvMEc0Rm1acnhSSVpQQXI3N3V4M0NaZGk3c0trYTh2TEZIVjljTWF4cE3SAY4CQVVfeXFMT2hKUURES3Y3aWt5aFV6dTNMTmUzLTdnd3cwYUJob1N4NkdybXowVFZRY1RwaFZtdVQ1OENxSEM1LVp4Q2VwekFhRk5NdE94U0hCdm9iRklJdUU4UE5hb1FOQjFkNTJ4eEw4WmExS2c5VEI4Qjg2c3dsQUp1YzJYWmxFbmd6SzFPaGFjU3h3TmRFM0NYS0F3UmFlQ2RTVEk3dGpoSVpaLTRCb21NX05sXy1lX3FhdkNlWms2UjJ5YlE5TGtVZzUxc3dkTXIzcUlRMnROa2FKNVBzY1diN1o2ZmM5bDRpdmdyNktQTnpPUGxCdFU2Um80RmFfOGVOUmZRRFE5bGQxNWtJbHpHcVJB?oc=5" target="_blank">Cayó en Medellín alias Medio Labio, presunto lavador de dinero vinculado al narcoparamilitarismo y a la mafia europea - Infobae</a></h3>
+        <div class="meta">Publicado: Thu, 19 Feb 2026 21:43:00 GMT</div>
+        <div class="summary">Cayó en Medellín alias Medio Labio, presunto lavador de dinero vinculado al narcoparamilitarismo y a la mafia europea  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Página|12</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMinAFBVV95cUxOYWhIalE3NWJGeUNtWUxmczJ4dkZUd0VWbDNMbERtVWFrY0Uwd2lQbU9KRDd1VGxvdzlTMmw2bk9mUEpmTG43alg0eXQ0TW5SejF1NE04REE3blRIZmhZZnN0VERMbVR0U0Jua19VMkdsaVExd0lRNHc2OTNrX1pjVTY5dnA0LUZORzlDRnh2Z1RMMmlaUU1PcFBPTVg?oc=5" target="_blank">El diputado del PRO, Juan Aicega, investigado por lavado de dinero - Página|12</a></h3>
+        <div class="meta">Publicado: Wed, 10 Aug 2022 07:00:00 GMT</div>
+        <div class="summary">El diputado del PRO, Juan Aicega, investigado por lavado de dinero  Página|12...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi9AFBVV95cUxOcFRoVHh4QldOaHpDM1R1NUoxZmJkTG04bWRkVlZrM1FSaEdQekZpU3cxeXJGUTQ2Z3I0Slo2Tks5cDBsM3RoSnZxNlFfeUFzWl9pTTBpeVVRdjRyY2FPY3RLbkN1YlNGOGg5YzQ5SXUzVGYwNWRoSVQtSHhWU2pQRmo3aER4V2RVQko2MENHVjdlWDNmMm9DeVBPOGloeTZRUDFueDRLeTk0aTB6azhFRzVxOVNqb2ttQ3hTamI3Vm1PX2s0RTRpRHk5d0tpUklnbU5MUFZuY0llZlVGTzJvVHk0TEJIdUlfeWV5blhYNlRONmY30gGPAkFVX3lxTE8zT3J2dlk1MV93OWh1US13UUMxcVRYUWxYTjZxV25aUjItODFycnNnVmZaeE1iYkdUNnB1b1B2TzAyNGRqRm1EaWJoMWRNTXFHNUlfM09hVGNsMlZZb1QyWS1kQWpsMi1TQmk1SFdqR1MxZ3NnX0N3cEE3SnVkakJkQkJfOWI2ZlFqM05saTFhYVhQTllwdjJLVW9wYkpMUG1UM0JXN1hBclNRa0tBb3pjU2huMVo4aUltclNITlM1eHBEWUU3Q29od0ozNmRtbExMTzlvZ2hiSEFzYlo2UjFkVUtpUmJqaG5oZ2NlRGR3cm5hM19uS3REZjVLQ0J4WC1qcmZ3ODFtRjBacy1sU2c?oc=5" target="_blank">Exasesora y mano derecha de José Jerí, investigada por lavado de activos, abrió bar en Miraflores con socias de 18 años - Infobae</a></h3>
+        <div class="meta">Publicado: Wed, 18 Feb 2026 02:02:00 GMT</div>
+        <div class="summary">Exasesora y mano derecha de José Jerí, investigada por lavado de activos, abrió bar en Miraflores con socias de 18 años  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi4AFBVV95cUxNck5BTlNVX2FRcjNtYWk5THpYbTdrRGlIVVNYVXdNOUltQ3dDYXR5OGlzUV9USl8wMTRWbDNKekRrNEFDakNybUFZdEE2NWFPeGppSGNPQjMxTXFxR0dBSWlBV21ycERpTnpqSE84MGVGN2ZNOVItRWtDZVhmX1FkZWtIQWUzaEdvQkZDc1hoV09oZkR0SGxDbG1oaDFVR2hieDFKVm5kdnBMYXV6eEZUQ3BXdk1qY3k5Y3lQRjByYVpUQW1QeUVQbWNqUzQteW9SYXd3SWlaQlZWOVdFVFFfUNIB-wFBVV95cUxNOVpSUkVUZFRWeUtyRUFhRDdRTTdnbHZmc3JMMHlFVlptcVRtYUxKdjRPSzdQamZrYkdCQ0hpMkRMTERMbGdrdndBeTRnYUNqU2t4Z3dOQnRNajBhMkNObjl0cFA0Y3VHMU53aENjeUlmQ1FvdE9SaFVXVWJxTzlHb1RtN3dZeDh6dDk3ZlFyd2g1bXdnTnhqWVhOempNQ3BrSGZsWWZpNFFUZERnc2VSS2V3SVlxVk1sei1tUXl6dFVjWmRHQzZEd3VOZjEyRWYwYmJndXpvbjExU0l0dG5GZVZFa2o1eVJjTVBiZ00zTmxrVlhidW1Va0phSQ?oc=5" target="_blank">República Dominicana fortalece controles en juegos de azar con nuevo acuerdo contra lavado - Infobae</a></h3>
+        <div class="meta">Publicado: Wed, 18 Feb 2026 23:30:00 GMT</div>
+        <div class="summary">República Dominicana fortalece controles en juegos de azar con nuevo acuerdo contra lavado  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
         <h3><a href="https://news.google.com/rss/articles/CBMi8gFBVV95cUxNeVd1VE51R3E5Sy1tMjZCNHZiTVlRMXlmVk9xREowMzdTWjF3cHhlbUJHMnFSdEFnOWh6OHZ1QVJESU5nRVdqSzlqbUdpZFdfWHlLOW1DS2N1aTRiOWJ2U1dXZ3Q1bjBBWVNyZkgtZHRreUNjYllmbXAtVFFid0RnZThWa2ZBYnUxdWJualg1WGpXOTBiMVFKemFiWEZXUF91RTQwaVhyMUxDdTNZSUhaUFZCUFBUM094ZV9ibkxBZ2xFdE5zM3VTei1HWm1vRnNkeG5VUVl2cnlsbzFSSnBQd1Z1RG80d1BwNEhBdndXN09jd9IBjAJBVV95cUxONVRGOHcwajhMaUxtb3dlWk5JRjhEQTJNbmhWa2R1VVBaRzdpdV9uRkFSX05YbGZYNFVoZWQ1UTUySE1mTkVfQ2xIUGhtb1h5RlUzU0hNdzZEV3JaUzR2UnRMRHZ4NVVHWmtQd1NLUnhhUGhzQkhUYWh1clNWYlpGR1kxOTJhZGFCUkVSWFg2bE82TTBCSFNEUmZmRVFsZEVRUWRDUG44d3hoRTVFU3ctN1d3cEtuY2Z4VDU2QVVzemhzTEZWNkdPSWxEcmFwU28xYUJNV1UzT1lwX0dVWXJRTUplazF2anlhalpjQlUtLS1IQldOSjJfOFFoeVp6U21hOGtTTm91UzA0bHd0?oc=5" target="_blank">Exasesora y mano derecha de José Jerí confirma que fue denunciada por lavado de activos y niega ser colaboradora eficaz - Infobae</a></h3>
-        <small><b>Infobae</b> | Tue, 17 Feb 2026 03:14:08 GMT</small>
-        <p>Exasesora y mano derecha de José Jerí confirma que fue denunciada por lavado de activos y niega ser colaboradora eficaz  Infobae...</p>
+        <div class="meta">Publicado: Tue, 17 Feb 2026 03:14:08 GMT</div>
+        <div class="summary">Exasesora y mano derecha de José Jerí confirma que fue denunciada por lavado de activos y niega ser colaboradora eficaz  Infobae...</div>
     </div>
     
-    <div>
-        <h3><a href="https://news.google.com/rss/articles/CBMi5AFBVV95cUxQa19jQzh0cG44TEFTZ3ZUT0ZPNDNaQVFqSFNzYUlRU3ZHY3hlREw5cE5zUGxIN0tFNU9xVzF1bmN2MEUxS3JPWWlCQ1pZSE85MGRHQUlUZGRUMTFDeEtxMW9ibHZPeG9sbTdDUEk1d1VudHNMUzZuUHN3eFZWaVBmeUp5dXlJbXZ3MEUxZTZueUtzWlQ1dUx6VzJtdmVfMGVsTWZkM0hnNGtEaklnckNvWXgzU3FXdkhHd0F6NGVXQWI1U1UtUHphbHppa2dhWTYxQjdKWmRPQmhIZ1V0V0NTNWo0dV_SAf8BQVVfeXFMTzM4a2F3djZxaUdiQUlpRWJ0Vl9PVndqNkQ3UlVjUTZhbmRvUGFxTllpM1JLak1KR2pLeURpbC1vam5FX1BGS1VYQjlDenFhZ2xtVXBfd3R0VHhaMnQ1TTVfZXczWkx0eGxZTDdxREJqTHhKQnlEM091d1FPZENtQ21ONGlkVWR1dlhodHJydGkzanB3Z2pNVmVMa3hEQnRmZW1JMTVicGV1THFsYmhod1NzazFFSmJvTVpjbEJHV181UFpBNTZBNl9QSHhtNXZhbmRxaUZWaDQ5NEZPdTl5NlptYjZsSnVMamoxZHg4QWNZbUo3cWt6NVRfQk05amFV?oc=5" target="_blank">El BCRA y la UIF dieron lineamientos a los bancos para que acepten “dólares de colchón”: cómo deberán actuar - Infobae</a></h3>
-        <small><b>Infobae</b> | Wed, 18 Feb 2026 18:48:00 GMT</small>
-        <p>El BCRA y la UIF dieron lineamientos a los bancos para que acepten “dólares de colchón”: cómo deberán actuar  Infobae...</p>
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMixwFBVV95cUxPcUxnR2t1dDl5aXBDSE5VV1IwVFhyNGpuZ2JmYW9FWlNMeEZMeFFNWkxLZUR5ZDZUZkVGNGoxbEd5YzhmdzVkVVpEdDdrYXdXUUEzN3ZPNmphaVFMOFN1akg2dmJWNjllYzhXeFhWbkxPLWNUZUJJUW50UzlFbzFPcU9HMnRXc2pHRXBfcHZ3NDg0clpTNDFYc1dUYmQxdk9WVzRDMWNacjdLV18yWUotRG1WMGZLeC1xaVVWOURFTnpaeXU0bk9B0gHiAUFVX3lxTE95YlRBNmczX0RvajRfcUxwTGxNQU41M0p1bVFTNEFKRDQxMmg4RHNGdl9xWnJpQlBXLXdPQnNzQ1FSMV9GOHkwcUwzU24yTGVWcmNQSGFuUWVVSmxUY2VTbjYtdS0tSW5PUncxZzBPOTZ3TXJyMEJ0YUk4bDl1bFRSTEVlTkRTZkwybWNWQXAyR3gxemd4UVJBdXVZX3BKbUFBX1l6MGl0RVFwZHhQUkVZcG9qckxON0tCTXIwR0J2MVZBWnNPWlJrVkQtajFyZHgtYVMwTERCbmpPNU1QYVYyNkE?oc=5" target="_blank">La policía hondureña incauta más de $89,000 a salvadoreño en frontera de Choluteca - Infobae</a></h3>
+        <div class="meta">Publicado: Tue, 17 Feb 2026 20:47:00 GMT</div>
+        <div class="summary">La policía hondureña incauta más de $89,000 a salvadoreño en frontera de Choluteca  Infobae...</div>
     </div>
     
-    <div>
-        <h3><a href="https://news.google.com/rss/articles/CBMi4gFBVV95cUxOYjdIQU1RbHNZbHNBbFp6ZlVLb1NaQWo5cVVEdVNXaUlPcnpqZm9oa2RyM20wTi1BVkRrVzBwamJBQjVvd1pZMTN1YXVVeUp2OEgyQzN1MXNMNFJlN2NuZHU1YkQzdVpFWmJ3emNmRU5WZkREb3E2UlFxbkh1WF9fbVJsdk9xT25KSVY2X2ZZSk1EemhtZms1ajF5Rjg2Vy1VMTVIVmRMVHp4M3RUdTU0cy1JRDI3UFdBOEUzYXdpc0xQVW80ZXBYTmJ4VXVreXpNZ2hVVk5rMnY1bzVoeEZvZUx3?oc=5" target="_blank">Revés para Insaurralde en su intento de usar un decreto de Milei para que no lo investigue la UIF - La Nación</a></h3>
-        <small><b>La Nación</b> | Thu, 19 Feb 2026 20:37:00 GMT</small>
-        <p>Revés para Insaurralde en su intento de usar un decreto de Milei para que no lo investigue la UIF  La Nación...</p>
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMiyAFBVV95cUxQVHhYQkc2UFotNERUampiNWp3SUdsY1BadXhFT3NoS3liNnJ3ZlNUSGxyb3ltTDRIa3luQTU3N1NQTEt3OExPUXVLVzBHektCOER2N2pqbVNrNUVwWXBiaXI5OXdrellqVlY3bHY2YkY3NnRxdjhzQ2hxT3QxdDE0aHdEelJNbzlRVTNCcnJxOVloSHVnQlYzdlo0T3BURm9qdlBBNDlHWENoWmRDb1RvM2tvOENuUUhJUzdfdjV3YmJVdlpBTDNSM9IB4wFBVV95cUxQTEJKRTJ3RUpha1E3aDlTVUkzcEJXRnNOa0pXRHoxV1BXUU00ODRuN0RYOGlRX2ZkVjY5OVdYbWI0b1JnNmc3blZadl9QYWgyU3hwWlFvVWo4VUdKZmdzeHJJZkZRaGRmRkpZdzE5OXdzdE1ZZFd2OVREUDY5ZTd4R1FRUDREa2pjUEhpa0kxWndLOHlJS1EzUXRkcjRZdm15UWVZR3RRcUMxZ3doWW52eGFveHpvQUdPb2RLTjdLVHdLSUxlWG8yTjBfcEtSR1VCTlQ3dG1yTGdQeXp6MlBQMm9BTQ?oc=5" target="_blank">Imputan por lavado de dinero al exministro de Energía ucraniano Galushchenko - Infobae</a></h3>
+        <div class="meta">Publicado: Mon, 16 Feb 2026 10:18:00 GMT</div>
+        <div class="summary">Imputan por lavado de dinero al exministro de Energía ucraniano Galushchenko  Infobae...</div>
     </div>
-    </body></html>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi6AFBVV95cUxQaXpUNXkzZXJvYU9DV3kzcDRHQ01UQkRUaGNNNzUyVUh4X1A5OGNVcmluVjNaTHljUkJ1OUowZktlZmVjSlllbTlBdFJJTG5JcndrYjloaDJMQjNkY1JnOTV0NGVVOHRHcFo4TTFTbnFGRDVHc29yb2JzbnkxRDhTSjlVOGlEZDM3em5xX1JXTjZmTVhmSnVWbVZzVTFmNEdZZklYVHJLbnBjV1ZibXdiMXE2MlBlVjBKX05VSnRwQU1TSDNsSWxHcEdabU5PNnl2V3M5M2FYX0JPdmU0aGVUaDdral9EQWNK0gGDAkFVX3lxTE5PcUpVYXRrcVRBaGJQWWw4UURuTDlGVDk5Y3pObVhjX2xIZ3B0LWlfT3k3UXR3QmJGaXZkajYtSWEwdUk3Xzl0UHNleEx3MXV3ZDAwRXhOdW85MklUajFjQ2pDa1p5LXFTMzhKVXBYOUh1WG8ySmpvb0d3ZDhQZjhZM25LZVlieE93TmczMkZVc0NjbnNrbm1QZWw3bjllRnlJOVUtZGJmbGhNMVVnU3RJeTV0QjJNbVJ1RUVZTzdCeVdDVWtGVC02Y01jYTA4WVEyc2dCU3U3Z1BFSnM3bmtIbS03WXF0emd1Tl91STlFRXZDUHdhaWlBcHFlYWlja1FGRnc?oc=5" target="_blank">Los bienes y el prontuario criminal de alias Durán, narco colombiando buscado en Brasil: una fortuna de USD 100 millones - Infobae</a></h3>
+        <div class="meta">Publicado: Wed, 18 Feb 2026 15:20:00 GMT</div>
+        <div class="summary">Los bienes y el prontuario criminal de alias Durán, narco colombiando buscado en Brasil: una fortuna de USD 100 millones  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMizwFBVV95cUxPU054UTFXbEFNYy1JRlltNVR2cGpmbFhyaTJJN2FBYklCVFI3cUpUNmw1M09UdVNjMFdBOXViWjJ1Z2hlMncyU25KNE4tNUxxckVsZDl1UXkwRWdXQjVJd3p0SEJ6TFM1b2FydnRaMnkySThoOXRPbmdxY0pSQlUtdEZucjh2a1BMVjNfNkdsZzc4T3ZKdzRmLVRXVTdnTlpGajB1S0drWm5xYjRVQmp3eU84eHlUWDlNS2hIWmt4ZG5ZN2J4b2dZU25faG9odUHSAeoBQVVfeXFMT0g3SC0wTWNnLTFPTlhqNk9lVjlpVDdUUjlNZkFfSm5IU25KaFh3VGxUVWs3aG00aGFJWW1qYUN2NlhpazVUZFQzZ2FqWmJvTzFJRWlNRFFjVm90bm95b2NBTTdUcVZUb3JVb0pvNEhFN2dMZlI4VFFEVjRMLUQxSnZCOGp1OGpEQVRyZ3VacDNWSGhhNFZKTkpGRW1qZ0lPSW93YVBwYmZ4Rm52SEtaNDkwa2FHczg5SGRiMGNDRmtSa1BKUVpPaERHdFFTNHJ0T2R6YkkwWUFqajM4VVJCUTZDSXRabXpVcjh3?oc=5" target="_blank">La Policía Nacional detuvo un hombre solicitado en extradición por narcotráfico en Cúcuta - Infobae</a></h3>
+        <div class="meta">Publicado: Tue, 17 Feb 2026 17:55:00 GMT</div>
+        <div class="summary">La Policía Nacional detuvo un hombre solicitado en extradición por narcotráfico en Cúcuta  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Ambito</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi6wFBVV95cUxQaU1lNEJXOEF3ZTI0dmdvYk81UTJWUXZRbURNRDBWTGI2WTFZbmFZLUN4Y01ScWJQWWxHOU5yUnlqUUZpR0lWbVFWOXlyWW12VWotekRzS29qMU11Y0VzODZBaEhGc3hldXppN0dLaDhwLWtqLUlGZm9YUjduUldLYk1LX081QjM3RlFJcUZCNmdPeThVZEtjdG1lT2tobkU0QmRHWjRoWnV1dUxjemRPOHZCRG9aQkkxQWFVYzlQUFB4N0FUN2RKRUFJTzFZMURiX205ekRVUUl0bGxaOFdIY1VtTmZES0JhQ0xB0gHwAUFVX3lxTE01eWVNTEFNMVFBYUFwcXJMOEYzT29iUy1PV1ktendtai1CbVZYSFMxNUdBQkp4SXB5SXkxNGdIN19nRXdOSzJJRFAzcmtiX2xvSDF3Tng4TkNvdFVjamEtTGF0T1MzS1hVbDh1VHBXejhPYl9nN0R6TEpwTklzZFNFU2xfSGl5UmxUUWhWS1ptZHdLNDR0cTJMdXh5YVBGSXRFeXRHdUlfX2N5S01JTF9MN3RHbXFnRkNrc2pqbDJSbjQ3bGw0OU1lZkN4X1lZazR0cjV1Zk42QUxNMjhyaHF1R0oxQWM1WllVTjVQaDZBMw?oc=5" target="_blank">Vuelos de José Luis Espert en aviones de "Fred" Machado: la fiscalía puso el foco en lavado narco y el juez ordenó pericias clave - Ambito</a></h3>
+        <div class="meta">Publicado: Fri, 20 Feb 2026 15:27:00 GMT</div>
+        <div class="summary">Vuelos de José Luis Espert en aviones de "Fred" Machado: la fiscalía puso el foco en lavado narco y el juez ordenó pericias clave  Ambito...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMigwJBVV95cUxOSXExZTkzTUxyeFJIdC1jT25wUmxvTVFSZ0QzS1puYVF5ZlhoQ3dUbGx5TGoxQV94MFVkUTlEcmlwR2hQLUtlSkYybklXZ0FES1hwZ3hybERSSGxFZ0dhV3g0QmJWQXhDbkRfaEVFWTVrR0xldk5zczBsWWpXTHVWVDQ5cU9VbHhucTU4VE5zUlhFVFZfX044TWRUMFgwZFhOWk5nTi14TmJfeUM0ZzY1RXNJN2lMN24yTkZjZ0tzYU9CMm5DTWdlN0U1NXA3YUtScXRfQ1FTZG90SFlRVlN3d3FFdGRQdnMxeVpQTkhrX2h1WEkyV1JTcHZkYVg3XzN1dkZ30gGeAkFVX3lxTE1FSzJ2aFlZRndObGZhVmdjekoxQWstaElTNUg0UTFQcVhScl9xV25DRE9rNlNtM09hTGVzZGxsUUdoWDFoblBVNVJoNTJvS3V5ejBKdTZ1Q2ZQb0ZBNnhHek1zOFR0NTdhc3RhRmJzdWIyTzRtSlBuWEcxemtlNEpSd2RLVzljd0trWno0OVhTZWVOVkNENXJ1d04yTTNIRHpBOENCSVg4bkMyRGFISWg3VnpTVVJ5LWYxNnZyTXJITDRsdktQMHc4TlpFbTBjRFd0S0UyUkpZV1BqZDRJeWJXbVZyeUpBUDdzcnVaZXNiY09PRlQxNmxuZHNOTlBsWjE2WTFZbWhhWHVCWm1nY0Mta2lCQVNkQnA4X0FvNkE?oc=5" target="_blank">Confirmaron la prisión preventiva del acusado de usar facturas falsas con organismos del gobierno de Jorge Capitanich en Chaco - Infobae</a></h3>
+        <div class="meta">Publicado: Fri, 20 Feb 2026 18:34:00 GMT</div>
+        <div class="summary">Confirmaron la prisión preventiva del acusado de usar facturas falsas con organismos del gobierno de Jorge Capitanich en Chaco  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMixwFBVV95cUxNbWJWbkx2NUkzWXlINkdnUFFEVnh4YldiQTVKdXF5aEphX1hCZFdiZHJycm5qT2tkdVNHdWpwODNGWFVkTU9ZNXBQYUtGUTdva0VyWFNZVzJmR2l0d25tR29RVkJMTzE2YWtrYXIwNzN1bUJjY0hfbEJkWm9XSkJJWkhGaUZmUU5vQUgyQ1A1MGtaRHA1aXh0ZTBxbGs5ZlZDME5GcmJoWnM2WWJMTjhlamV1Vnc0SU9kV3JpbFJVZmVGempkcGhz0gHiAUFVX3lxTE1SekdOeFhUZUJUNkJwdVVxZzIzR2k5X0FVckdjYWJoRl9QQ2FXa2RLQU92c3Q5SUNVMWh0Y3FOOEc0c3NUMWY1N0J5Z3dydDNmWWxRVGhtTjlFb0RMOF9wTzAtYXBIYk9POW5iY3g5emxFMUxkb3A0YmRGUF9BTGxfUmhteWcwbl96YktHSDgzRnhuR0tyTXlXQmxHNzliallqRWZrUjdQS09VSGQ3cTQtYXZpS3FRR3BoTlVBZEwzRWpaU3ZEN2ZCYW1EbFNjaVpZYkVJeVQxTXNUWWVmZE5famc?oc=5" target="_blank">Colegio de Bachilleres lanza recomendaciones y medidas para evitar casos de sarampión - Infobae</a></h3>
+        <div class="meta">Publicado: Wed, 18 Feb 2026 04:35:00 GMT</div>
+        <div class="summary">Colegio de Bachilleres lanza recomendaciones y medidas para evitar casos de sarampión  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi-gFBVV95cUxQVFRXWUQyVUdxLWhtc1dlWHU1bk9sVFV5cU9DUnFMdUxHM204UkNwV295SENPNV9tX19XaW9yVGtzV25waFBWcDg5REhXakpSVUtmQUs3cEJuMTRGeVVNc2U5bDdkdndyRGhPQlBvcTZzWnZJR2xWcXYxU0Jia2NnZTVLT3FzTGFoeDhnaHpFbWV0dTFXaDVJQzR6ZWFLV3lqMkFUa2EtaGpJYXNPWUNnLVJPNVljalpEVjdnZHFhWV9uRmtRYXk2Q2ZrVm1MS1N4ZFhQRUt3MV93akdVeHJ3cHJVcG9ISkNaY25qSk9weVpUQ2RVNUtQY0Rn0gGUAkFVX3lxTE5xaHV4UWlzdW9vc1Npa09oa1I0b2FkLVNyUlVrWmdBQ2ZvODdLSmZqUVF4cUJsMExXdzFSZGItR21fVGxpTXRhSDRmR0xjbzZ3UUQ1UDBWRmZMWElMR0JnaGwxeTVHSngyTEVZbkpJaG5VYmtLMTM1VVFxcXF4REI3LVB6S3ZJYk5NSkNya3U1NVZKUzExUUhCRFJUbjREdVlNaGxkQ2xqUXBvc0d4QUtMQjM0TFprR2lNRGpRRVd5V1JzeVFzMUJFSTlPQkZlXzY2bUZNVmlXbVdTUDZ4Y01CVzNFN0JTRlEtTkl3OEdlTWQxRUtCcmwwODBueDdmYmp3MWJyTGV4OTktWHBKYlJHa1VjVQ?oc=5" target="_blank">Corte Federal de Florida aplaza para el 18 de marzo la sentencia contra el exdirector de la Tasa de Seguridad de Honduras - Infobae</a></h3>
+        <div class="meta">Publicado: Fri, 20 Feb 2026 11:54:00 GMT</div>
+        <div class="summary">Corte Federal de Florida aplaza para el 18 de marzo la sentencia contra el exdirector de la Tasa de Seguridad de Honduras  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi7AFBVV95cUxPdVo0cWp3ZUwwOENTUWo0bHRNY0xFZ0ozT0NiellGVVoycWhYbGg2UGJrOWg1UEt3OFN2V184Z1lkUFM1NW1CT0ZvR2E4X1lOUmxUSmozakxXM092SWJBVzI1YU4tRWlxRjd4QXplWm5STE5nY0FHMFcwam1jUFZCRHlzbVpCeWhubzA0anVQOEhvNkV5SG9MZjlCOUU5UnN1VTM3ek5DaGdLWFh4TC12OEJ3STJRV2tNS1E5UHYxRlBOR1JZeHhDZjcwTV84c0pIWThaYXJOM1RMZ2ZDRjBoX2xBd3p4dEhZQjJ5c9IBhwJBVV95cUxNVTZxVDVsN3p1QzV2b2FkemlsS0s1S1IyRVFmb3Mza25QUlJrVzQ1VjFpUGIwR2Z2NDZQT1hMbkFmOVg4S0ZEWTdnb1NRUmQ0OTNXQ2hDSEZnMnBpNW5hd2xkNGZwWlZ1Mko5SFhxTGxORDdIbWRTUE9QYXJ1a3BLZFRMVjNzMkFwblg2VzNaQXJlOTdibDk2R1dFUmw1U1FjdFZBRGRmOTJWZEtJWXd1X3d6VDN6eTU5QlF0ZmZxRTVNNU8tTDFLWjZrMHZkS2pSX2xOWjlwd2dUOHhWZ3ptelNvMEI4MHZ2b0VPczJFTWhlN3RURE5DZWJXQlkyMGJIZ1EzaFBaOA?oc=5" target="_blank">Iniciarían extradiciones desde Colombia hacia Venezuela luego de llamadas entre Gustavo Petro y Delcy Rodríguez - Infobae</a></h3>
+        <div class="meta">Publicado: Thu, 19 Feb 2026 17:59:00 GMT</div>
+        <div class="summary">Iniciarían extradiciones desde Colombia hacia Venezuela luego de llamadas entre Gustavo Petro y Delcy Rodríguez  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi7wFBVV95cUxPcXNvd2xJUF93WWxVMmhmX0hWZnZwa3dpQzl1Q1FNbzRXaVdBRGc3WnhaWjUtS0c1Q2Q1RjRyWVJLQWZkTlExRkJuWmNNTXpfS09abVctdEFzTWUzZ1hQOGZJOV9KYkZ1a05nQTRPSE9kSXpGTk1JR3Q3TkxQTFowZUZfT3NMVlgyemNxWXhzWHdwZzEyWlByY1hhajdOUjZld0VXZmpYdDNwNGljVVR5NUFMUnVONmotVTZtYm9SUlkxZE9kaV9qTTZDcjRuVDJ0TEJvS1lYUmd1bWZ5dFBMTUtPRmRrMGN1NHVTMVcwNNIBigJBVV95cUxNU2hjalJ4Q2JzUEczQV8zb3E4WEtRdlBFUmtvQTYxOFhhQXpqZ2NZNHp1U3dCR1dTMFZjYjl0b2hBVWRVb3ZoZ1YyemgtbzFCNnd3YU81VHJNSF9ab2tGZG9hcVYwWnhHa0RwM1FNOUpRbm1XeGxBcUVYdVZKaGxkd0Iyc1N5TlNQTzlJZFZoSThta0FXRGFKQ1NIT2lBVHlpMUZTVHNQSll0NmJZMGd2VkE3Sm82dlEzQUdLcS1paV9aa3p2TnFxbXFnRUpaNnRtZ2NSOUc4MXVMVkQ4NDhTRjBmcGZ3bk13bTNyVlRORUJsY0pUcFdKNHZ3Y3ZLUmpFdTFIRmZZZzBWUQ?oc=5" target="_blank">Sur Finanzas: ordenaron allanamientos y detuvieron a sospechosos de borrar pruebas de la financiera ligada a la AFA - Infobae</a></h3>
+        <div class="meta">Publicado: Thu, 12 Feb 2026 08:00:00 GMT</div>
+        <div class="summary">Sur Finanzas: ordenaron allanamientos y detuvieron a sospechosos de borrar pruebas de la financiera ligada a la AFA  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi1AFBVV95cUxONnFiYlFjcVg3cEtuVElSbkNZNk5Pbnkxak5laTdlRS1PYVFzZG5USEpSRHNwVDliS1R6b291Z3hGbnFJMkpkakxXa0lDSWlGX2NjUUw3SEx0clZ5ZnhKLVRYaUF5UDZwdjN2SkM2a1lPZkhwR1ZiN051Z1pCOHFlY3pnQmo4dGZfdTZGaUlQVVVwWXdCSE1IRFI5LW9CaXJ4QktzY0l6S3FseHVhb1JJbWxvbGpvemMyZUNyYXJZQ3dxcW5aT3plWUx5Z1hjOW1mU1E1Q9IB7wFBVV95cUxQa1BWX3piSUVRdWZxNjQ0MEtzWkpLYkhxOE1DcXg5RFlRc21pOTZrajFRWElxSFlyaWNQRnlUaDEyZ2lGT1AzbldtVVJCelMycmVNRGFBU3Z4VGdRTzA3S2VhYm9SajhjcjNwbG9aS3pTU3pSd3BGdEpDSU9FdTZpcVkydWdFZTl3TDA4TWRRTm9KOWxaaVRsYnZYY0QxYnNObW1QSm5KSUhQTkIyYVRlaHNmdG15TEtfdGU1Uk1lMzQtbDZzMGItdk5aX3NDbG14OVNneDQxUEVhUVFHTkJmMjRJZ19aN09CZWIzbkpJNA?oc=5" target="_blank">Las nuevas alianzas del crimen chino en Brasil: de los cárteles mexicanos al PCC - Infobae</a></h3>
+        <div class="meta">Publicado: Mon, 16 Feb 2026 12:25:00 GMT</div>
+        <div class="summary">Las nuevas alianzas del crimen chino en Brasil: de los cárteles mexicanos al PCC  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi1wFBVV95cUxOVExFRkJtNUtJMkdCTE13TzFhOXFKam5GUVM4RVpidEVrY0JJVjNqaDFudGNFbFJLQTY0N2xrUWlmcTRhMWJJanhjaDhoZnVmTkxlNWVTa05CbGVTTlVuejdYRlM1UzZSR2ZIS2ZKTTdkZ2stTnZiWVNBbXc1b1ZPNEVZVGgtcEJxZzdHWUlvNXowdmtrcWV5cGdHNzRHZW5XTUxKYTdaVFZqR3dsZ0ladjdaOWYyOGVFVzIxM3FpQktfZThHcUpsM2RXYXBjSWwzQ1NSOW1VMNIB8gFBVV95cUxQRFU5UzVpZWozdW9oX3ZaVUtCWF9LbS1IY2JremxldHNuT0Z2d1d0SlNjbzI2T2d1Q3g5a1hHNXhycGhtZTdEUkd4cHVqbFB5blprbFlteGtlWDNhMGwwUF9LemdDbkRYdl9GTjVnZWttMHRULWxhY2F1aktJUkpQN0xrSWZmNzk3WERzN3VfR1J3UlR3aVI5ZjdSS3g1LXBmVm5pcmhSRWxJZEhwY2JOYW82cE1XWVBrMENQYnMzeU8tbFl6Vk1DTV8wRFNDT3Q0S2wxRVRGamlvV0JUU21yX2NXd2c2bVVYQ0wtRVNzRVRXdw?oc=5" target="_blank">Tucumán: congelan bienes y criptoactivos en una causa por presunto lavado del Comando Vermelho - Infobae</a></h3>
+        <div class="meta">Publicado: Sat, 14 Feb 2026 06:22:00 GMT</div>
+        <div class="summary">Tucumán: congelan bienes y criptoactivos en una causa por presunto lavado del Comando Vermelho  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Exitoina</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMizgFBVV95cUxQaTVKMjZzallaVTZMcUc3WmJBQjlvOVAtbnAwSXJXdVgzQW4xdkxfN2VJWkItbWNvM0tGeFgwakdOQVJTY25KQ2FEYWp1MlN1UjI0Q2UyckFLS1Q5enJ1LXMtVFJGNV9ORWMyTVFOdkw3cnhYck5ZU01NZ2VkcDVyYVpCWUNHT0ZXSkpYOURGVlFHc0ZVeXVScExLOGFKTHZaMXpYS1NvS0lYMFphNHZzYWdRUEVUdkJ3dUlSWnpPNnpzcThsY3VPZlJpUXFkZ9IB0wFBVV95cUxNVGFNcnU3VFJyYVM1N1MzdC05dkpPWl9lNHBKdF9ZYkRmRFV5UXFHNTFBUmxiTHNkcWJVeTdIaWJwVXhQSTU0N1hJTm52UkFRQ25QOUNjc0p5SWlUaG84OGZGdlgyY0lFd3l1MDBkWjVIOWdDdmgwV3c2RS16dHRIY1ZjTFVWWVpPSTJZb1FNWTdBLWpEYmtYN1BWWTctSVZzVnkyVFpvZ3FIUFh5LVc1RXg5ZTZaV3ZrcDVhN0V0M3QxbnpQVVJZZ3ZBRWlnNXpFN19r?oc=5" target="_blank">Quique Felman rompió el silencio tras su detención en Estados Unidos: "Fui víctima" - Exitoina</a></h3>
+        <div class="meta">Publicado: Sun, 15 Feb 2026 18:21:48 GMT</div>
+        <div class="summary">Quique Felman rompió el silencio tras su detención en Estados Unidos: "Fui víctima"  Exitoina...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi3gFBVV95cUxNRTlpcFozblpLZkFYX3RyNzk5SEFoQXVmS3loY1JkU3BNX1U1SmhrcHprenlibGJULWdaeEg4dWgzV2M2TFJaYm1lRG1ueE5FTWJEc0RFRW5FekVCOEMtd3RJcFpUX1JiMmpWLXpXT1VkcS1Nbm1weHJaMkVYV3lJeDBhT0REMU9OWGw0cGtZZFhOR2dyZnJRdlNUdVhYUHdXX1R4TTNVeWpSdnQ4OTdDLUgzeHU3UExHWEVkUHNxYklPNnNkU0sxVHFGb29NVWpDZm41b05MYTlkRlJkQ2fSAfgBQVVfeXFMTkZXQlpzTVRVc2pxOWF1MWJ2UmJaZWlxR3ZhUndTVUZ5bTNGcEN6NHRqcVpHNmRnakVEczh2ZmZYNktIcGxRMllyNHRyc1ZDcU1VOVRoTkxfQVdFUjZYaWZKZlJkUzRYclQzNWU3bG9sZUpkZ3JzX1V5Sl9QemhrLWNBaTZrZDExNFlHRU9PR19oUklWcHFqc05raDRMaTd5WWgyM2xSZER5OHpROFc3UzU3dTR5dXlnODgxTnZNYWJTMm1fZXFIdEtxNmRKQmxOcFF2QWNwNVdXSjlmQ2l2ak9nRUlOTXZRUTh3Z0c5Zk1zZHBHeG1nZE0?oc=5" target="_blank">La fiscalía contra delitos transnacionales conmemora sexto aniversario con allanamientos y capturas - Infobae</a></h3>
+        <div class="meta">Publicado: Fri, 20 Feb 2026 22:34:00 GMT</div>
+        <div class="summary">La fiscalía contra delitos transnacionales conmemora sexto aniversario con allanamientos y capturas  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi2gFBVV95cUxPSTUzcWJxNlh1VURhUFVuYzhzV3hraS1FOW16ZDhUb3RGZHREbzJUQWdRckdta2htVEpWU0RxLUFydEt5dlgxM2VHV1ZveXppMmp5Tko5ZDltbnZOVG1WcGZqaTJGOGdzYTRIUzZWQWRQWEFYckpzcTNYR3IxUk8yOTVRMTlrT0duMm9SZWNyMHFBbF81MlRpQWJNOFNINTNyclRJVExFNXpUaXVGbGFJSFZEN1J6YzluRU4xelRsanNaZzBiQWFqVk5vMGFxQ1NlRkZFWXlUUTMzUdIB9AFBVV95cUxQUlc5c1p3ZG9ZV1N4WmgwY0RFQllhNlhYSkNBaHM0QndrNW5mbmFoOTZhUlNkVWpUT1p3OUJWaVZXdERLQ2JJS1lQSUVNZEZkS2tOYXkweG1GQzQ1ZllzVi1WdDRld3VWREtkZkxkdHM1b1N0NEh6d2w4ak00MUhTeTVwR3J0T0gtVWUyUC1LZDRWYmRCSlFrUzlZTzhGWmhSR3lnUU9IbjZHMmd3NnBiaVFzOFFoZTg1bmVyanZlZzdmWmtlem9lVFNvTjAtZnlHZEFoRWUyX0VENk53Skt0bk1wUG1wVjZMaVpSSmtkTTNEQUI0?oc=5" target="_blank">Cooperación entre Guatemala y Estados Unidos golpea redes que trasladan migrantes y lavan dinero - Infobae</a></h3>
+        <div class="meta">Publicado: Fri, 20 Feb 2026 01:39:00 GMT</div>
+        <div class="summary">Cooperación entre Guatemala y Estados Unidos golpea redes que trasladan migrantes y lavan dinero  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">Infobae</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi4wFBVV95cUxNLWtZNzBEZTUtSHk5enlmeXZFdVgxMW40blVTQ2ZnbEFOOGE5d0k1VTdfWmRrc0FhNVZKRmlYZTRnRnZtNWxyUWdVX3FwU0lpT1hzZmxZQldhWlEydWtMVkctZHJuZlZSR2RSZXdmZEJDemVzQ3ZGSmRnekVWemVyakxuTjh6VUpiNGM4NFd3b05HQVhFNF9VYU1uT1hiYTE4Zlk4WXpDTE9ncmdNUjlUS0NsQnp2YXlwRnFra2hyRTR5UUdIU1NZa1FjRVhTRHBucWtIOUVMTWZaczBzMDV1M0lDd9IB_gFBVV95cUxQQ2VkRWRkb21VY1VkUUF4SWdBWWtTNm0xOG1hd1BoU3NibjAtc2xGTVMwWHdTb1Q2Z3JFQjQxc010SGl1cjRZTVNKSERucVoxTmNYZHBGXzM4c1h1djZWdWhnS2tPMjJVWkl5VzNMdHg5T0JNUllOVVoxaFV4Zy1xMWJiZW9CblJkam1lbGlFeGpsdlIwSVRPTk9SN0dIcU4wQjFVVjFlU3p4Q1JRRWlWMzlJNHlHTUluQ0wzR3RLMTZ0RzF0dmgxYmhZY0p2ME1jcTZqSVFfMlhJVG5RVTFBbFp5VFZqOWZQbC1fY2RKOTU2REFTNzJLV1Zuc05oUQ?oc=5" target="_blank">Los cuatro nuevos imputados en la causa Sur Finanzas quedaron en libertad, pero siguen bajo investigación - Infobae</a></h3>
+        <div class="meta">Publicado: Mon, 16 Feb 2026 04:51:00 GMT</div>
+        <div class="summary">Los cuatro nuevos imputados en la causa Sur Finanzas quedaron en libertad, pero siguen bajo investigación  Infobae...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">La Nación</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi5wFBVV95cUxQbXlVRVN1aklLamVsRHVUc2JITFcxWklsNERpY1NITUx3N2NDMjZBeUl2dENYU2ljckdKaWw0U0xJWmllT3V0R3ZYdUl0ekhfVjZES0FfX0t1RmpzZk9WZE9NOWFPQUloaEpTbnoxMHMyVGFBcHFCVHB6bEVmbHV5S2dHOFFRRFhfZU9CeDhFRkpZaWRjQ0hiQzVnZWlXUnV3UkpFeldtMV8yS2t1OXpmb3pUelhKdEZ3UGsweUc3TXJpNzZQdW5pVGpYR3ByVFhQVDA1MVMxcEEwalgxTG1FWFloeEVxRDA?oc=5" target="_blank">La detención de Quique Felman en los Estados Unidos: cuáles son las últimas novedades del caso - La Nación</a></h3>
+        <div class="meta">Publicado: Sat, 14 Feb 2026 16:35:00 GMT</div>
+        <div class="summary">La detención de Quique Felman en los Estados Unidos: cuáles son las últimas novedades del caso  La Nación...</div>
+    </div>
+    
+    <div class="card prensa">
+        <span class="badge badge-prensa">TN</span>
+        <h3><a href="https://news.google.com/rss/articles/CBMi1gFBVV95cUxNV0lka19jaTdlNlJtaWdOU3NabkRnenhNQWhLYWFnUnhocFprLUk3T2FmNTEyRUZsT1BuZld3eTBaR0RLMFFWbEZBRUtIbFQ1WkFtV0lTRkhFNVdrQUQ1V3lNTFUweV9FalJwOW04QzJ3OEpYVERxTG9xZFA2bkwxSVJ6U2VWczdJc3JXZW9TMmd3Y01xNHBBRFFqV1BMZGx3RVBpSWN5NWhUaHFJazkxTEZiTm56Q2hySkxIUXExUEpLT0w2MWVreTVIRF8xaUg5dTNPRnN30gHqAUFVX3lxTE93enlKVElhcTd5VHc1QmsyM2Z5eTNVMWxtWTl0cjV3V1RKanZ3OV9paVItRVNWdXUwMEg3c2pqZ2ZDZi14NDhBMG40Wm1uMDVwTnd1M2NKN055aTdNdGt6aGg5Uk0zV1VjUDBhYzFYR1ludExaSEgzRkw4TEtsZ2xOZGZoMUcydXJmQmtianJsQWZRNVhUdlk0VVozb0ZqWUlYTzdXb0dCSHNvTTBJVzEydDFUajRGT3BINHdkZjNsa0ZPOE9UdTVjbmdTd1dRbHZ2QTR3U3NfVTAzNEMyQlhsYzhmYWotTzFLdw?oc=5" target="_blank">Lavar las almohadas con una cucharada de vinagre blanco: por qué recomiendan hacerlo y para qué sirve - TN</a></h3>
+        <div class="meta">Publicado: Tue, 17 Feb 2026 18:58:19 GMT</div>
+        <div class="summary">Lavar las almohadas con una cucharada de vinagre blanco: por qué recomiendan hacerlo y para qué sirve  TN...</div>
+    </div>
+    
+    </div>
+    <footer>
+        Actualizado automáticamente cada mañana. Fuente: PROCELAC, GAFI y Medios Nacionales.
+    </footer>
+</body>
+</html>
