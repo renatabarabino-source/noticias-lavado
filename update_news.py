@@ -24,9 +24,15 @@ def clean_summary(text):
 
 def fetch_news():
     noticias = []
-    # 1. Google News para medios generales
-    query = f"({' OR '.join(['site:'+s for s in SITES])}) ({' OR '.join(['\"'+k+'\"' for k in KEYWORDS])})"
-    url_gn = f"https://news.google.com/rss/search?q={urllib.parse.quote(query)}+when:{DIAS_ATRAS}d&hl=es-419&gl=AR&ceid=AR:es-419"
+    
+    # --- ARREGLO PARA EL ERROR DE SINTAXIS ---
+    # Construimos las partes de la búsqueda por separado para evitar conflictos de comillas
+    site_query = " OR ".join([f"site:{s}" for s in SITES])
+    # Usamos comillas simples para evitar la barra invertida \
+    keyword_query = " OR ".join(['"' + k + '"' for k in KEYWORDS])
+    full_query = f"({site_query}) ({keyword_query})"
+    
+    url_gn = f"https://news.google.com/rss/search?q={urllib.parse.quote(full_query)}+when:{DIAS_ATRAS}d&hl=es-419&gl=AR&ceid=AR:es-419"
     
     entries = feedparser.parse(url_gn).entries
     # 2. Feeds oficiales
@@ -36,15 +42,19 @@ def fetch_news():
     for entry in entries:
         title = entry.title.lower()
         if any(k in title for k in KEYWORDS) and not any(n in title for n in NEGATIVE_FILTER):
+            # Verificación extra para evitar errores de fuente
+            fuente_nombre = "Medios/Oficial"
+            if hasattr(entry, 'source') and hasattr(entry.source, 'title'):
+                fuente_nombre = entry.source.title
+            
             noticias.append({
-                "Fuente": entry.source.title if hasattr(entry, 'source') else "Oficial/Medios",
+                "Fuente": fuente_nombre,
                 "Titular": entry.title,
                 "Resumen": clean_summary(entry.summary if 'summary' in entry else ""),
                 "Link": entry.link,
                 "Fecha": entry.get('published', 'Reciente')
             })
     
-    # Ordenar y limitar a las 10 mejores
     return noticias[:MAX_NOTICIAS]
 
 # --- GENERACIÓN DE LA PÁGINA HTML ---
