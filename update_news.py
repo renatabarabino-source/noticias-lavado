@@ -112,7 +112,7 @@ html_content = f"""
 <body>
     <header>
         <h1>🗞️ AML News Dashboard</h1>
-        <p>Reporte de Cumplimiento | {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+        <p>Principales Noticias de Lavados de Activos para AML BCCL| {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
     </header>
     <div class="container">
 """
