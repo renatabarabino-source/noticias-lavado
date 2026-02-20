@@ -4,10 +4,18 @@ from datetime import datetime, timedelta
 import urllib.parse
 from bs4 import BeautifulSoup
 import os
+import socket # <--- AGREGAMOS ESTA LIBRERÍA
+
+# Forzamos un límite de tiempo de 15 segundos para que no se cuelgue
+socket.setdefaulttimeout(15) 
+
+# --- CONFIGURACIÓN ---
+# (El resto del código dejalo todo igual)
+
 
 # --- CONFIGURACIÓN ---
 KEYWORDS = ['lavado de activos', 'lavado de dinero', 'prevención de lavado', 'uif', 'aml', 'procelac', 'gafi']
-# Restricción: No mencionar noticias de "dólar blue"
+# Excluimos "dólar blue" por política de cumplimiento
 NEGATIVE_FILTER = ['dólar blue', 'dolar blue', 'clima', 'fútbol', 'pronóstico']
 DIAS_ATRAS = 5
 MAX_NOTICIAS = 25
@@ -28,36 +36,61 @@ def clean_summary(text):
 def fetch_news():
     noticias_finales = []
     
-    # 1. Búsqueda combinada
+    # 1. Búsqueda en Medios Argentinos
     all_arg = ARG_SITES + GOV_SITES
     site_query = " OR ".join([f"site:{s}" for s in all_arg])
-    keyword_query = " OR ".join(['"' + k + '"' for k in KEYWORDS])
+    # Construcción segura para evitar errores de sintaxis en GitHub Actions
+    kw_parts = ['"' + k + '"' for k in KEYWORDS]
+    keyword_query = " OR ".join(kw_parts)
     full_query = f"({site_query}) ({keyword_query})"
     
     url_gn = f"https://news.google.com/rss/search?q={urllib.parse.quote(full_query)}+when:{DIAS_ATRAS}d&hl=es-419&gl=AR&ceid=AR:es-419"
     entries = feedparser.parse(url_gn).entries
 
-    # 2. Feeds Oficiales
+    # 2. Feeds Oficiales Directos (Prioridad)
     f_fiscales = feedparser.parse(OFFICIAL_FEEDS["Fiscales.gob.ar"]).entries
     f_gafi = feedparser.parse(OFFICIAL_FEEDS["GAFI / FATF"]).entries
 
-    # Procesar todo con etiquetas de origen
+    # Procesar Fiscales primero para asegurar presencia
     for entry in f_fiscales:
-        noticias_finales.append({"Fuente": "PROCELAC", "Titular": entry.title, "Resumen": clean_summary(entry.summary), "Link": entry.link, "Fecha": entry.get('published', 'Reciente'), "Tipo": "oficial"})
+        noticias_finales.append({
+            "Fuente": "PROCELAC", 
+            "Titular": entry.title, 
+            "Resumen": clean_summary(entry.summary if 'summary' in entry else ""), 
+            "Link": entry.link, 
+            "Fecha": entry.get('published', 'Reciente'), 
+            "Tipo": "oficial"
+        })
 
+    # Procesar Prensa Argentina
     for entry in entries:
         if not any(n in entry.title.lower() for n in NEGATIVE_FILTER):
-            fuente = entry.source.title if hasattr(entry, 'source') else "Medio"
-            noticias_finales.append({"Fuente": fuente, "Titular": entry.title, "Resumen": clean_summary(entry.summary), "Link": entry.link, "Fecha": entry.get('published', 'Reciente'), "Tipo": "prensa"})
+            fuente = entry.source.title if hasattr(entry, 'source') else "Medio Argentino"
+            noticias_finales.append({
+                "Fuente": fuente, 
+                "Titular": entry.title, 
+                "Resumen": clean_summary(entry.summary if 'summary' in entry else ""), 
+                "Link": entry.link, 
+                "Fecha": entry.get('published', 'Reciente'), 
+                "Tipo": "prensa"
+            })
 
+    # Procesar Internacionales (GAFI)
     for entry in f_gafi:
-        noticias_finales.append({"Fuente": "GAFI/FATF", "Titular": entry.title, "Resumen": clean_summary(entry.summary), "Link": entry.link, "Fecha": entry.get('published', 'Reciente'), "Tipo": "internacional"})
+        noticias_finales.append({
+            "Fuente": "GAFI/FATF", 
+            "Titular": entry.title, 
+            "Resumen": clean_summary(entry.summary if 'summary' in entry else ""), 
+            "Link": entry.link, 
+            "Fecha": entry.get('published', 'Reciente'), 
+            "Tipo": "internacional"
+        })
 
-    # Eliminar duplicados y limitar
+    # Eliminar duplicados por título y limitar a lo que pediste
     seen = set()
     return [n for n in noticias_finales if not (n['Titular'] in seen or seen.add(n['Titular']))][:MAX_NOTICIAS]
 
-# --- GENERACIÓN DE HTML (DISEÑO PREMIUM) ---
+# --- GENERACIÓN DE HTML (Dashboard Premium) ---
 data = fetch_news()
 html_content = f"""
 <!DOCTYPE html>
@@ -65,7 +98,7 @@ html_content = f"""
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AML Dashboard - Credicoop</title>
+    <title>AML News Dashboard - Credicoop</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {{ --primary: #004a80; --accent: #2ecc71; --bg: #f4f7f9; --text: #2c3e50; }}
@@ -82,7 +115,6 @@ html_content = f"""
         .badge-prensa {{ background: #e3f2fd; color: #1565c0; }}
         h3 {{ margin: 0.5rem 0; font-size: 1.25rem; }}
         h3 a {{ color: var(--primary); text-decoration: none; }}
-        h3 a:hover {{ text-decoration: underline; }}
         .meta {{ font-size: 0.85rem; color: #7f8c8d; margin-bottom: 1rem; }}
         .summary {{ font-size: 0.95rem; color: #576574; }}
         footer {{ text-align: center; padding: 2rem; color: #95a5a6; font-size: 0.8rem; }}
@@ -91,7 +123,7 @@ html_content = f"""
 <body>
     <header>
         <h1>🗞️ AML News Dashboard</h1>
-        <p>Reporte de Inteligencia Financiera | {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+        <p>Inteligencia Financiera para el Banco Credicoop | {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
     </header>
     <div class="container">
 """
@@ -110,7 +142,7 @@ for n in data:
 html_content += """
     </div>
     <footer>
-        Actualizado automáticamente cada mañana para el equipo de Análisis AML.
+        Actualizado automáticamente cada mañana. Fuente: PROCELAC, GAFI y Medios Nacionales.
     </footer>
 </body>
 </html>
