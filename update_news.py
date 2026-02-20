@@ -11,6 +11,17 @@ socket.setdefaulttimeout(15)
 
 # --- CONFIGURACIÓN ---
 # (El resto del código dejalo todo igual)
+# --- CONFIGURACIÓN ---
+KEYWORDS = ['lavado de activos', 'lavado de dinero', 'prevención de lavado', 'uif', 'aml', 'procelac', 'gafi']
+# Excluimos "dólar blue" y ahora también sumamos tips de limpieza doméstica
+NEGATIVE_FILTER = [
+    'dólar blue', 'dolar blue', 'clima', 'fútbol', 'pronóstico',
+    'almohada', 'almohadas', 'ropa', 'vinagre', 'mancha', 'manchas', 
+    'jabón', 'limpiar', 'limpieza', 'lavar', 'secadora', 'lavadero', 
+    'auto', 'bicarbonato', 'colchón', 'sabanas'
+]
+
+
 
 
 # --- CONFIGURACIÓN ---
