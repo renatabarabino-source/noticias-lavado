@@ -1,4 +1,4 @@
-import feedparser
+import import feedparser
 import pandas as pd
 from datetime import datetime, timedelta
 import urllib.parse
@@ -7,12 +7,11 @@ import os
 
 # --- CONFIGURACIÓN ---
 KEYWORDS = ['lavado de activos', 'lavado de dinero', 'prevención de lavado', 'uif', 'aml', 'procelac', 'gafi']
-# Excluimos "dólar blue" por pedido del usuario
+# Restricción: No mencionar noticias de "dólar blue"
 NEGATIVE_FILTER = ['dólar blue', 'dolar blue', 'clima', 'fútbol', 'pronóstico']
 DIAS_ATRAS = 5
-MAX_NOTICIAS = 25 # Pediste al menos 20, ponemos un margen
+MAX_NOTICIAS = 25
 
-# Fuentes priorizadas (Argentinas)
 ARG_SITES = ["lanacion.com.ar", "tn.com.ar", "infobae.com", "ambito.com", "perfil.com", "pagina12.com.ar"]
 GOV_SITES = ["afip.gob.ar", "argentina.gob.ar", "cnv.gov.ar"]
 
@@ -27,129 +26,95 @@ def clean_summary(text):
     return soup.get_text()[:300] + "..."
 
 def fetch_news():
-    noticias_argentinas = []
-    noticias_internacionales = []
-    noticias_fiscales = []
-    noticias_gafi = []
-
-    # 1. Búsqueda en Medios Argentinos y Gobierno vía Google News
+    noticias_finales = []
+    
+    # 1. Búsqueda combinada
     all_arg = ARG_SITES + GOV_SITES
     site_query = " OR ".join([f"site:{s}" for s in all_arg])
     keyword_query = " OR ".join(['"' + k + '"' for k in KEYWORDS])
     full_query = f"({site_query}) ({keyword_query})"
     
-    url_gn_arg = f"https://news.google.com/rss/search?q={urllib.parse.quote(full_query)}+when:{DIAS_ATRAS}d&hl=es-419&gl=AR&ceid=AR:es-419"
-    entries_arg = feedparser.parse(url_gn_arg).entries
+    url_gn = f"https://news.google.com/rss/search?q={urllib.parse.quote(full_query)}+when:{DIAS_ATRAS}d&hl=es-419&gl=AR&ceid=AR:es-419"
+    entries = feedparser.parse(url_gn).entries
 
-    # 2. Búsqueda Internacional (para ver qué se repite)
-    int_query = f"({keyword_query}) -site:ar"
-    url_gn_int = f"https://news.google.com/rss/search?q={urllib.parse.quote(int_query)}+when:{DIAS_ATRAS}d&hl=es&gl=US&ceid=US:es"
-    entries_int = feedparser.parse(url_gn_int).entries
-
-    # 3. Feeds Oficiales Directos
+    # 2. Feeds Oficiales
     f_fiscales = feedparser.parse(OFFICIAL_FEEDS["Fiscales.gob.ar"]).entries
     f_gafi = feedparser.parse(OFFICIAL_FEEDS["GAFI / FATF"]).entries
 
-    # Procesar Fiscales (Prioridad Máxima)
+    # Procesar todo con etiquetas de origen
     for entry in f_fiscales:
-        noticias_fiscales.append({
-            "Fuente": "Fiscales.gob.ar (Oficial)",
-            "Titular": entry.title,
-            "Resumen": clean_summary(entry.summary if 'summary' in entry else ""),
-            "Link": entry.link,
-            "Fecha": entry.get('published', 'Reciente'),
-            "Prioridad": 1
-        })
+        noticias_finales.append({"Fuente": "PROCELAC", "Titular": entry.title, "Resumen": clean_summary(entry.summary), "Link": entry.link, "Fecha": entry.get('published', 'Reciente'), "Tipo": "oficial"})
 
-    # Procesar Argentinas
-    for entry in entries_arg:
+    for entry in entries:
         if not any(n in entry.title.lower() for n in NEGATIVE_FILTER):
-            noticias_argentinas.append({
-                "Fuente": entry.source.title if hasattr(entry, 'source') else "Medio Argentino",
-                "Titular": entry.title,
-                "Resumen": clean_summary(entry.summary if 'summary' in entry else ""),
-                "Link": entry.link,
-                "Fecha": entry.get('published', 'Reciente'),
-                "Prioridad": 2
-            })
+            fuente = entry.source.title if hasattr(entry, 'source') else "Medio"
+            noticias_finales.append({"Fuente": fuente, "Titular": entry.title, "Resumen": clean_summary(entry.summary), "Link": entry.link, "Fecha": entry.get('published', 'Reciente'), "Tipo": "prensa"})
 
-    # Procesar GAFI e Internacionales
     for entry in f_gafi:
-        noticias_gafi.append({
-            "Fuente": "GAFI / FATF (Oficial)",
-            "Titular": entry.title,
-            "Resumen": clean_summary(entry.summary if 'summary' in entry else ""),
-            "Link": entry.link,
-            "Fecha": entry.get('published', 'Reciente'),
-            "Prioridad": 3
-        })
+        noticias_finales.append({"Fuente": "GAFI/FATF", "Titular": entry.title, "Resumen": clean_summary(entry.summary), "Link": entry.link, "Fecha": entry.get('published', 'Reciente'), "Tipo": "internacional"})
 
-    for entry in entries_int[:10]: # Solo las más relevantes internacionales
-        if not any(n in entry.title.lower() for n in NEGATIVE_FILTER):
-            noticias_internacionales.append({
-                "Fuente": entry.source.title if hasattr(entry, 'source') else "Internacional",
-                "Titular": entry.title,
-                "Resumen": clean_summary(entry.summary if 'summary' in entry else ""),
-                "Link": entry.link,
-                "Fecha": entry.get('published', 'Reciente'),
-                "Prioridad": 4
-            })
-
-    # Combinar asegurando variedad y el cupo de 20
-    # Ponemos fiscales primero, luego argentinas, luego el resto
-    resultado = noticias_fiscales + noticias_argentinas + noticias_gafi + noticias_internacionales
-    
-    # Eliminamos duplicados por título
+    # Eliminar duplicados y limitar
     seen = set()
-    final_list = []
-    for n in resultado:
-        if n['Titular'] not in seen:
-            final_list.append(n)
-            seen.add(n['Titular'])
+    return [n for n in noticias_finales if not (n['Titular'] in seen or seen.add(n['Titular']))][:MAX_NOTICIAS]
 
-    return final_list[:MAX_NOTICIAS]
-
-# --- GENERACIÓN DE LA PÁGINA HTML ---
+# --- GENERACIÓN DE HTML (DISEÑO PREMIUM) ---
 data = fetch_news()
 html_content = f"""
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte Profesional AML - Lavado de Activos</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AML Dashboard - Credicoop</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        .oficial {{ border-left: 5px solid #2ecc71; background: #fafffa; padding-left: 15px; }}
-        .argentina {{ border-left: 5px solid #3498db; padding-left: 15px; }}
-        .internacional {{ border-left: 5px solid #95a5a6; padding-left: 15px; }}
-        small {{ color: #7f8c8d; }}
-        h3 {{ margin-bottom: 5px; }}
+        :root {{ --primary: #004a80; --accent: #2ecc71; --bg: #f4f7f9; --text: #2c3e50; }}
+        body {{ font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); line-height: 1.6; margin: 0; padding: 0; }}
+        header {{ background: var(--primary); color: white; padding: 2rem 1rem; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }}
+        header h1 {{ margin: 0; font-weight: 800; letter-spacing: -1px; }}
+        .container {{ max-width: 900px; margin: 2rem auto; padding: 0 1rem; }}
+        .card {{ background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s; border-left: 6px solid #d1d8e0; }}
+        .card:hover {{ transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }}
+        .card.oficial {{ border-left-color: var(--accent); }}
+        .card.prensa {{ border-left-color: #3498db; }}
+        .badge {{ display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem; }}
+        .badge-oficial {{ background: #e8f5e9; color: #2e7d32; }}
+        .badge-prensa {{ background: #e3f2fd; color: #1565c0; }}
+        h3 {{ margin: 0.5rem 0; font-size: 1.25rem; }}
+        h3 a {{ color: var(--primary); text-decoration: none; }}
+        h3 a:hover {{ text-decoration: underline; }}
+        .meta {{ font-size: 0.85rem; color: #7f8c8d; margin-bottom: 1rem; }}
+        .summary {{ font-size: 0.95rem; color: #576574; }}
+        footer {{ text-align: center; padding: 2rem; color: #95a5a6; font-size: 0.8rem; }}
     </style>
 </head>
 <body>
-    <h1>🗞️ Reporte de Lavado de Activos</h1>
-    <p><b>Análisis para:</b> Banco Credicoop | <b>Actualizado:</b> {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
-    <p style="font-size: 0.8em; color: #666;">Fuentes: Fiscales, GAFI, Medios Nacionales e Internacionales (Últimos 5 días).</p>
-    <hr>
+    <header>
+        <h1>🗞️ AML News Dashboard</h1>
+        <p>Reporte de Inteligencia Financiera | {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+    </header>
+    <div class="container">
 """
 
 for n in data:
-    clase = "argentina"
-    if "Oficial" in n['Fuente']: clase = "oficial"
-    if n['Prioridad'] == 4: clase = "internacional"
-    
+    badge_class = f"badge-{n['Tipo']}" if n['Tipo'] in ['oficial', 'prensa'] else "badge-prensa"
     html_content += f"""
-    <div class="{clase}" style="margin-bottom: 25px;">
+    <div class="card {n['Tipo']}">
+        <span class="badge {badge_class}">{n['Fuente']}</span>
         <h3><a href="{n['Link']}" target="_blank">{n['Titular']}</a></h3>
-        <small><b>Fuente:</b> {n['Fuente']} | <b>Fecha:</b> {n['Fecha']}</small>
-        <p>{n['Resumen']}</p>
+        <div class="meta">Publicado: {n['Fecha']}</div>
+        <div class="summary">{n['Resumen']}</div>
     </div>
     """
 
-if len(data) < 1:
-    html_content += "<p>No se encontraron noticias relevantes en los últimos 5 días.</p>"
-
-html_content += "</body></html>"
+html_content += """
+    </div>
+    <footer>
+        Actualizado automáticamente cada mañana para el equipo de Análisis AML.
+    </footer>
+</body>
+</html>
+"""
 
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html_content)
