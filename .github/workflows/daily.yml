@@ -1,12 +1,14 @@
 name: Actualizar Noticias Diario
 on:
   schedule:
-    - cron: '0 12 * * *' # Se ejecuta a las 9 AM Argentina (12 UTC)
-  workflow_dispatch: # Permite ejecutarlo manualmente
+    - cron: '0 12 * * *'
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python
@@ -14,7 +16,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Install dependencies
-        run: pip install feedparser beautifulsoup4 pandas
+        run: pip install feedparser beautifulsoup4 requests
       - name: Run script
         run: python update_news.py
       - name: Commit and Push
@@ -22,5 +24,5 @@ jobs:
           git config --global user.name "NewsBot"
           git config --global user.email "bot@github.com"
           git add index.html
-          git commit -m "Actualización diaria de noticias" || exit 0
-          git push
+          git commit -m "Update news dashboard" || exit 0
+          git push origin main --force
