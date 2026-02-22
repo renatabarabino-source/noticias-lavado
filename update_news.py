@@ -3,36 +3,41 @@ import urllib.parse
 from bs4 import BeautifulSoup
 import os
 import socket
-from datetime import datetime, timedelta
+from datetime import datetime
 import requests
 
-socket.setdefaulttimeout(20)
+socket.setdefaulttimeout(30)
 
-# --- CONFIGURACIÓN ---
-KEYWORDS_NORMATIVA = ['uif', 'gafi', 'bcra', 'arca', 'cnv', 'ley de lavado', 'resolución']
-KEYWORDS_ESCANDALOS = ['corrupción', 'causa', 'justicia', 'lavado de dinero', 'famoso', 'empresario', 'imputado']
-NEGATIVE_FILTER = ['aguacate', 'salud', 'receta', 'dieta', 'fútbol', 'pronóstico', 'clima', 'vinagre', 'almohada', 'mancha', 'jabón']
+# --- CONFIGURACIÓN DE FILTROS ---
+# Filtro negativo extremo para eliminar "ruido" doméstico
+NEGATIVE_FILTER = [
+    'aguacate', 'salud', 'receta', 'dieta', 'fútbol', 'pronóstico', 'clima', 'vinagre', 
+    'almohada', 'mancha', 'jabón', 'limpieza', 'lavarropas', 'ropa', 'tintorería', 
+    'suavizante', 'cloro', 'bicarbonato', 'pelo', 'cutis'
+]
 
 DIAS_ATRAS = 5
 MAX_NOTICIAS = 30
 
 def get_image(url):
     try:
-        res = requests.get(url, timeout=5)
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        res = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(res.text, 'html.parser')
-        img = soup.find("meta", property="og:image")
-        return img["content"] if img else ""
+        img = soup.find("meta", property="og:image") or soup.find("meta", property="twitter:image")
+        return img.get("content") or img.get("href") if img else ""
     except:
         return ""
 
 def clean_summary(text):
     if not text: return "Sin descripción disponible."
     soup = BeautifulSoup(text, "html.parser")
-    return soup.get_text()[:180] + "..."
+    return soup.get_text()[:250] + "..."
 
 def fetch_category(query, is_intl=False):
     gl = "US" if is_intl else "AR"
     hl = "en" if is_intl else "es-419"
+    
     url = f"https://news.google.com/rss/search?q={urllib.parse.quote(query)}+when:{DIAS_ATRAS}d&hl={hl}&gl={gl}&ceid={gl}:es-419"
     entries = feedparser.parse(url).entries
     
@@ -40,23 +45,34 @@ def fetch_category(query, is_intl=False):
     for entry in entries:
         t_low = entry.title.lower()
         if not any(n in t_low for n in NEGATIVE_FILTER):
-            img = get_image(entry.link)
             news_list.append({
                 "fuente": entry.source.title if hasattr(entry, 'source') else "Medio",
                 "titular": entry.title,
                 "link": entry.link,
                 "fecha": entry.get('published', 'Reciente'),
                 "resumen": clean_summary(entry.summary if 'summary' in entry else ""),
-                "img": img
+                "img": get_image(entry.link)
             })
     return news_list[:MAX_NOTICIAS]
 
-# Procesamiento de solapas
-news_principal = fetch_category(" OR ".join([f'"{k}"' for k in KEYWORDS_NORMATIVA]) + " site:argentina.gob.ar OR site:fiscales.gob.ar")
-news_argentina = fetch_category(" OR ".join([f'"{k}"' for k in KEYWORDS_ESCANDALOS]) + " site:infobae.com OR site:lanacion.com.ar OR site:ambito.com")
-news_intl = fetch_category("lavado de activos OR money laundering site:fatf-gafi.org OR site:elpais.com OR site:cnn.com", is_intl=True)
+# --- ESTRATEGIA DE BÚSQUEDA POR SOLAPA ---
+
+# 1. PRINCIPAL (NORMATIVAS): Foco en entes reguladores argentinos y GAFI
+# Incluye ARCA, UIF, BCRA, CNV y leyes específicas.
+query_principal = '("lavado de activos" OR "lavado de dinero" OR "AML" OR "blanqueo") AND (UIF OR BCRA OR ARCA OR CNV OR GAFI OR "resolución" OR "normativa")'
+news_principal = fetch_category(query_principal)
+
+# 2. ARGENTINA (ESCÁNDALOS Y MOVIMIENTOS): Foco en justicia y ahora incluye DÓLAR BLUE
+# Buscamos la relación entre el mercado informal y el lavado.
+query_argentina = '("lavado de dinero" OR "lavado de activos") AND ("dólar blue" OR "cuevas" OR "justicia" OR "corrupción" OR "imputado" OR "PROCELAC")'
+news_argentina = fetch_category(query_argentina)
+
+# 3. INTERNACIONAL: Foco global, sin entes locales como ARCA.
+query_intl = '("money laundering" OR "lavado de activos") AND (FATF OR "Interpol" OR "FinCEN" OR "OFAC" OR "Global") -ARCA -UIF -BCRA'
+news_intl = fetch_category(query_intl, is_intl=True)
 
 # --- GENERACIÓN DE HTML ---
+# (Mantenemos el diseño de solapas y fondos que pediste)
 html_template = f"""
 <!DOCTYPE html>
 <html lang="es">
@@ -68,72 +84,14 @@ html_template = f"""
     <style>
         :root {{ --p-color: #004a80; --a-color: #3498db; --i-color: #d4af37; }}
         body {{ font-family: 'Inter', sans-serif; margin: 0; background: #fdfdfd; }}
-        
-        header {{ background: #004a80; color: white; text-align: center; padding: 40px 20px; }}
-        header h1 {{ margin: 0; font-weight: 900; font-size: 2.5rem; }}
-        header p {{ margin: 10px 0 0; font-weight: 700; font-size: 1.3rem; opacity: 0.9; }}
-
-        /* Tabs */
+        header {{ background: var(--p-color); color: white; text-align: center; padding: 40px 20px; }}
+        header h1 {{ margin: 0; font-weight: 900; font-size: 2.2rem; }}
+        header p {{ margin: 10px 0 0; font-weight: 700; font-size: 1.2rem; opacity: 0.9; }}
         .tabs {{ display: flex; justify-content: center; background: #fff; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-        .tab-btn {{ padding: 15px 30px; border: none; background: none; cursor: pointer; font-weight: 700; font-size: 1rem; color: #666; transition: 0.3s; border-bottom: 4px solid transparent; }}
+        .tab-btn {{ padding: 15px 25px; border: none; background: none; cursor: pointer; font-weight: 700; font-size: 0.9rem; color: #666; border-bottom: 4px solid transparent; }}
         .tab-btn.active {{ color: var(--p-color); border-bottom-color: var(--p-color); }}
-
-        /* Backgrounds & Designs */
-        .page {{ display: none; padding: 40px 20px; min-height: 80vh; transition: 0.5s; }}
+        .page {{ display: none; padding: 30px 15px; min-height: 80vh; }}
         .page.active {{ display: block; }}
         
-        #principal {{ background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), url('https://images.unsplash.com/photo-1554224155-1696413575b3?auto=format&fit=crop&w=1920&q=80'); background-size: cover; background-attachment: fixed; }}
-        #argentina {{ background: linear-gradient(rgba(240,248,255,0.9), rgba(240,248,255,0.9)), url('https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?auto=format&fit=crop&w=1920&q=80'); background-size: cover; }}
-        #international {{ background: linear-gradient(rgba(245,245,245,0.9), rgba(245,245,245,0.9)), url('https://images.unsplash.com/photo-1436491865332-7a61a109c0f2?auto=format&fit=crop&w=1920&q=80'); background-size: cover; }}
-
-        .grid {{ max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }}
-        
-        /* Card Style (Jekyll inspired) */
-        .card {{ background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.08); transition: 0.3s; display: flex; flex-direction: column; }}
-        .card:hover {{ transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.15); }}
-        .card img {{ width: 100%; height: 200px; object-fit: cover; }}
-        .card-content {{ padding: 20px; flex-grow: 1; }}
-        .badge {{ display: inline-block; padding: 4px 10px; border-radius: 5px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; }}
-        
-        /* Category specific badges */
-        .p-badge {{ background: #e3f2fd; color: #004a80; }}
-        .a-badge {{ background: #fff3e0; color: #e65100; }}
-        .i-badge {{ background: #eeeeee; color: #424242; }}
-        
-        h3 {{ margin: 0 0 10px; font-size: 1.1rem; line-height: 1.4; }}
-        h3 a {{ text-decoration: none; color: #333; }}
-        .desc {{ font-size: 0.9rem; color: #666; }}
-    </style>
-</head>
-<body>
-    <header>
-        <h1>Resumen de Noticias 📰</h1>
-        <p>Para AML BCCL 💵📈</p>
-    </header>
-
-    <div class="tabs">
-        <button class="tab-btn active" onclick="showTab('principal')">PRINCIPAL (NORMATIVAS)</button>
-        <button class="tab-btn" onclick="showTab('argentina')">ARGENTINA</button>
-        <button class="tab-btn" onclick="showTab('international')">INTERNACIONAL</button>
-    </div>
-
-    <div id="principal" class="page active"><div class="grid">{''.join([f'<div class="card">{"<img src="+n["img"]+">" if n["img"] else ""}<div class="card-content"><span class="badge p-badge">{n["fuente"]}</span><h3><a href="{n["link"]}" target="_blank">{n["titular"]}</a></h3><p class="desc">{n["resumen"]}</p></div></div>' for n in news_principal])}</div></div>
-    
-    <div id="argentina" class="page"><div class="grid">{''.join([f'<div class="card">{"<img src="+n["img"]+">" if n["img"] else ""}<div class="card-content"><span class="badge a-badge">{n["fuente"]}</span><h3><a href="{n["link"]}" target="_blank">{n["titular"]}</a></h3><p class="desc">{n["resumen"]}</p></div></div>' for n in news_argentina])}</div></div>
-    
-    <div id="international" class="page"><div class="grid">{''.join([f'<div class="card">{"<img src="+n["img"]+">" if n["img"] else ""}<div class="card-content"><span class="badge i-badge">{n["fuente"]}</span><h3><a href="{n["link"]}" target="_blank">{n["titular"]}</a></h3><p class="desc">{n["resumen"]}</p></div></div>' for n in news_intl])}</div></div>
-
-    <script>
-        function showTab(tabId) {{
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            event.currentTarget.classList.add('active');
-        }}
-    </script>
-</body>
-</html>
-"""
-
-with open("index.html", "w", encoding="utf-8") as f:
-    f.write(html_template)
+        #principal {{ background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), url('https://images.unsplash.com/photo-1554224155-1696413575b3?auto=format&fit=crop&w=1920&q=80'); background-size: cover; }}
+        #argentina {{ background: linear-gradient(rgba(240,248,255,0.9), rgba(240,248,255,0.9)), url('
