@@ -2,298 +2,329 @@ import feedparser
 import urllib.parse
 from bs4 import BeautifulSoup
 import socket
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import requests
 
-socket.setdefaulttimeout(10)
+socket.setdefaulttimeout(30)
 
-# ── DEPENDENCIA OPCIONAL pytz ──
-try:
-    import pytz
-    tz_ar = pytz.timezone('America/Argentina/Buenos_Aires')
-    now_ar = datetime.now(tz_ar)
-except ImportError:
-    from datetime import timezone, timedelta
-    tz_ar = timezone(timedelta(hours=-3))
-    now_ar = datetime.now(tz_ar)
-
+# ── HORA ARGENTINA (UTC-3, sin pytz) ──
+tz_ar = timezone(timedelta(hours=-3))
+now_ar = datetime.now(tz_ar)
 meses = ['enero','febrero','marzo','abril','mayo','junio',
          'julio','agosto','septiembre','octubre','noviembre','diciembre']
-fecha_hoy = f"{now_ar.day} de {meses[now_ar.month-1]} de {now_ar.year} · {now_ar.strftime('%H:%M')} hs (ARG)"
+fecha_hoy = "{} de {} de {} · {} hs (ARG)".format(
+    now_ar.day, meses[now_ar.month - 1], now_ar.year, now_ar.strftime('%H:%M')
+)
 
 # ── CONFIGURACIÓN ──
 BASE_AML = '("lavado de dinero" OR "lavado de activos" OR "blanqueo" OR "blanqueamiento" OR "AML")'
 
-GENERAL_NEG = ['dental','dientes','odontología','aguacate','receta','fútbol','clima','vinagre','limpieza']
-ACTUALIZACION_NEG = GENERAL_NEG + ['policial','crimen','asesinato','robo','detenido','allanamiento','tiroteo','narco','banda']
+NEGATIVE_FILTER = [
+    'dental', 'dientes', 'odontología', 'aguacate', 'receta', 'fútbol', 'clima',
+    'vinagre', 'almohada', 'mancha', 'jabón', 'limpieza', 'ropa', 'suavizante',
+    'lavarropas', 'pelo', 'cutis', 'salud', 'dieta'
+]
+ACTUALIZACION_NEG = NEGATIVE_FILTER + [
+    'policial', 'crimen', 'asesinato', 'robo', 'detenido', 'allanamiento', 'tiroteo', 'narco', 'banda'
+]
 
-PORTALES_PRENSA = (
-    "site:infobae.com OR site:clarin.com OR site:lanacion.com.ar OR site:pagina12.com.ar OR "
-    "site:minutouno.com OR site:tn.com.ar OR site:perfil.com OR site:eldestapeweb.com OR "
-    "site:lapoliticaonline.com OR site:iprofesional.com OR site:ambito.com OR site:cronista.com OR "
-    "site:eleconomista.com.ar OR site:baenegocios.com OR site:reuters.com OR site:bloomberg.com OR "
-    "site:eldiarioar.com OR site:gacetamercantil.com OR site:apertura.com OR "
-    "site:cnnespanol.cnn.com OR site:elpais.com"
+SITES_GOV = (
+    "site:argentina.gob.ar OR site:afip.gob.ar OR site:bcra.gob.ar OR "
+    "site:cnv.gov.ar OR site:fiscales.gob.ar OR site:uif.gob.ar"
+)
+SITES_PRIVADOS = (
+    "site:cronista.com OR site:ambito.com OR site:iprofesional.com OR site:infobae.com OR "
+    "site:lanacion.com.ar OR site:clarin.com OR site:tn.com.ar OR site:perfil.com OR "
+    "site:bloomberg.com OR site:reuters.com OR site:baenegocios.com OR site:eldiarioar.com OR "
+    "site:pagina12.com.ar OR site:lapoliticaonline.com OR site:eleconomista.com.ar OR "
+    "site:gacetamercantil.com OR site:apertura.com OR site:minutouno.com"
 )
 
-PORTALES_ACTUALIZACIONES = (
-    PORTALES_PRENSA +
-    " OR site:uif.gob.ar OR site:bcra.gob.ar OR site:cnv.gob.ar OR site:argentina.gob.ar"
-)
-
-DIAS_NOTICIAS       = 5
+DIAS_NOTICIAS = 5
 DIAS_ACTUALIZACIONES = 30
+MAX_NOTICIAS = 25
 
 session = requests.Session()
 session.headers.update({'User-Agent': 'Mozilla/5.0 NewsBot/BCCL'})
 
-# ── HELPERS ──
-def clean_text(text):
-    if not text:
-        return "Sin descripción disponible."
-    txt = BeautifulSoup(text, "html.parser").get_text()
-    txt = txt.replace('"', '&quot;').replace("'", '&#39;').replace('<', '&lt;').replace('>', '&gt;')
-    return txt[:240] + "..."
-
-def safe(text):
-    """Escapa comillas para uso seguro dentro de atributos HTML."""
-    return str(text).replace('"', '&quot;').replace("'", '&#39;')
+def clean_summary(text):
+    if not text: return "Sin descripción disponible."
+    return BeautifulSoup(text, "html.parser").get_text()[:240] + "..."
 
 def fetch_category(query, limit, negative_keywords, dias):
-    url = (
-        "https://news.google.com/rss/search?q="
-        + urllib.parse.quote(query)
-        + f"+when:{dias}d&hl=es-419&gl=AR&ceid=AR:es-419"
+    url = "https://news.google.com/rss/search?q={}&hl=es-419&gl=AR&ceid=AR:es-419".format(
+        urllib.parse.quote(query + " when:{}d".format(dias))
     )
     try:
-        response = session.get(url, timeout=10)
-        entries = feedparser.parse(response.content).entries
+        resp = session.get(url, timeout=15)
+        entries = feedparser.parse(resp.content).entries
     except Exception as e:
-        print(f"  [ERROR fetch] {e}")
+        print("Error:", e)
         return []
 
-    news_list   = []
+    news_list = []
     seen_titles = set()
     seen_sources = {}
 
     for entry in entries:
-        t_low  = entry.title.lower()
-        fuente = entry.source.title if hasattr(entry, 'source') else "Medio"
-
+        t_low = entry.title.lower()
         if len(entry.title) < 15 or entry.link.count('/') < 4:
             continue
+        fuente = entry.source.title if hasattr(entry, 'source') else "Medio"
         if seen_sources.get(fuente, 0) >= 3:
             continue
-        if entry.title in seen_titles:
-            continue
-        if any(n in t_low for n in negative_keywords):
-            continue
-
-        news_list.append({
-            "fuente":  fuente,
-            "titular": entry.title.replace('<','&lt;').replace('>','&gt;'),
-            "link":    safe(entry.link),
-            "resumen": clean_text(entry.get('summary', '')),
-            "fecha":   entry.published[:16] if 'published' in entry else ""
-        })
-        seen_titles.add(entry.title)
-        seen_sources[fuente] = seen_sources.get(fuente, 0) + 1
+        if entry.title not in seen_titles and not any(n in t_low for n in negative_keywords):
+            news_list.append({
+                "fuente": fuente,
+                "titular": entry.title,
+                "link": entry.link,
+                "fecha": entry.get('published', 'Reciente')[:16],
+                "resumen": clean_summary(entry.summary if 'summary' in entry else "")
+            })
+            seen_titles.add(entry.title)
+            seen_sources[fuente] = seen_sources.get(fuente, 0) + 1
 
     return news_list[:limit]
 
-# ── FETCH ──
-print("Buscando noticias...")
-q_noticias = f'({BASE_AML} OR "dólar blue") AND ("lavado" OR "blanqueo") AND ({PORTALES_PRENSA})'
-news_noticias = fetch_category(q_noticias, 24, GENERAL_NEG, DIAS_NOTICIAS)
-print(f"  Noticias encontradas: {len(news_noticias)}")
+# ── QUERIES ──
 
+# TAB 1 — NOTICIAS: Argentina, lavado, blanqueo, dólar
+q_noticias = '({} OR "dólar blue") AND ("lavado" OR "blanqueo") AND ({})'.format(
+    BASE_AML, SITES_PRIVADOS
+)
+news_noticias = fetch_category(q_noticias, MAX_NOTICIAS, NEGATIVE_FILTER, DIAS_NOTICIAS)
+
+# TAB 2 — ACTUALIZACIONES NORMATIVAS: UIF, GAFI, BCRA, ARCA, CNV — últimos 30 días
 q_actualizaciones = (
-    f'({BASE_AML}) AND '
-    '("UIF" OR "GAFI" OR "BCRA" OR "ARCA" OR "CNV") AND '
-    '("resolución" OR "comunicado" OR "normativa" OR "circular" OR '
-    '"disposición" OR "decreto" OR "recomendación" OR "alerta" OR "informe") AND '
-    f'"Argentina" AND ({PORTALES_ACTUALIZACIONES})'
+    '({}) AND ("UIF" OR "GAFI" OR "BCRA" OR "ARCA" OR "CNV") AND '
+    '("resolución" OR "comunicado" OR "normativa" OR "regulación" OR "circular" OR '
+    '"disposición" OR "actualización" OR "ley" OR "decreto" OR "alerta" OR "informe") AND '
+    '"Argentina" AND (({}) OR ({}))'.format(BASE_AML, SITES_GOV, SITES_PRIVADOS)
 )
 news_actualizaciones = fetch_category(q_actualizaciones, 6, ACTUALIZACION_NEG, DIAS_ACTUALIZACIONES)
-print(f"  Actualizaciones encontradas: {len(news_actualizaciones)}")
 
-# ── IMÁGENES DE FONDO ──
-BG_NOTICIAS = [
-    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format",
-    "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&auto=format",
-    "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=600&auto=format",
-    "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format",
-    "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=600&auto=format",
-    "https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=600&auto=format",
-    "https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=600&auto=format",
-    "https://images.unsplash.com/photo-1543286386-713bdd548da4?w=600&auto=format",
-    "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&auto=format",
-    "https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=600&auto=format",
-    "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=600&auto=format",
-    "https://images.unsplash.com/photo-1565372195458-9de0b320ef04?w=600&auto=format",
-]
-BG_ACTUALIZACIONES = [
-    "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&auto=format",
-    "https://images.unsplash.com/photo-1554224154-26032ffc0d07?w=600&auto=format",
-    "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&auto=format",
-    "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&auto=format",
-    "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=600&auto=format",
-    "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600&auto=format",
-]
+print("Noticias: {}  |  Actualizaciones: {}".format(len(news_noticias), len(news_actualizaciones)))
 
-# ── RENDER ──
-def render_noticias(news_list):
+# ── RENDER CARDS ──
+def render_cards(news_list):
     if not news_list:
-        return '<div class="no-news">No se encontraron noticias para este período.</div>'
-    html = ""
-    for i, n in enumerate(news_list):
-        if i == 0:
-            cls = "card-large"
-        elif i < 3:
-            cls = "card-medium"
-        else:
-            cls = "card-small"
-        bg = BG_NOTICIAS[i % len(BG_NOTICIAS)]
-        html += (
-            '<article class="card ' + cls + '" '
-            'style="background-image:url(\'' + bg + '\')" '
-            'onclick="window.open(\'' + n['link'] + '\',\'_blank\')">'
-            '<div class="card-overlay"></div>'
-            '<div class="card-content">'
-            '<div class="card-top">'
-            '<span class="badge">' + n['fuente'] + '</span>'
-            '<span class="card-date">' + n['fecha'] + '</span>'
-            '</div>'
-            '<h3>' + n['titular'] + '</h3>'
-            '<p class="desc">' + n['resumen'] + '</p>'
-            '<span class="read-more">Leer nota &rarr;</span>'
-            '</div></article>\n'
+        return '<p style="text-align:center;color:#888;padding:40px">No se encontraron noticias para este período.</p>'
+    parts = []
+    for n in news_list:
+        parts.append(
+            '<div class="card">'
+            '<span class="badge">{fuente}</span>'
+            '<h3><a href="{link}" target="_blank" rel="noopener">{titular}</a></h3>'
+            '<p class="fecha">{fecha}</p>'
+            '<p class="desc">{resumen}</p>'
+            '</div>'.format(
+                fuente=n["fuente"], link=n["link"],
+                titular=n["titular"], fecha=n["fecha"],
+                resumen=n["resumen"]
+            )
         )
-    return html
+    return "\n".join(parts)
 
-def render_actualizaciones(news_list):
-    if not news_list:
-        return '<div class="no-news">No se encontraron actualizaciones en los últimos 30 días.</div>'
-    html = ""
-    for i, n in enumerate(news_list):
-        bg = BG_ACTUALIZACIONES[i % len(BG_ACTUALIZACIONES)]
-        html += (
-            '<article class="card card-reg" '
-            'style="background-image:url(\'' + bg + '\')" '
-            'onclick="window.open(\'' + n['link'] + '\',\'_blank\')">'
-            '<div class="card-overlay"></div>'
-            '<div class="card-content">'
-            '<div class="card-top">'
-            '<span class="badge badge-gold">' + n['fuente'] + '</span>'
-            '<span class="card-date">' + n['fecha'] + '</span>'
-            '</div>'
-            '<h3>' + n['titular'] + '</h3>'
-            '<p class="desc">' + n['resumen'] + '</p>'
-            '<span class="read-more gold-link">Ver resolución &rarr;</span>'
-            '</div></article>\n'
-        )
-    return html
-
-cards_noticias       = render_noticias(news_noticias)
-cards_actualizaciones = render_actualizaciones(news_actualizaciones)
-cnt_n = str(len(news_noticias))
-cnt_a = str(len(news_actualizaciones))
+cards_noticias      = render_cards(news_noticias)
+cards_actualizaciones = render_cards(news_actualizaciones)
+cnt_n = len(news_noticias)
+cnt_a = len(news_actualizaciones)
 
 # ── HTML ──
-HEAD = """<!DOCTYPE html>
+HTML = """<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AML Monitor · BCCL</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --navy:#050d1a;--navy2:#0b1a2e;--navy3:#0f2040;
-  --gold:#d4a843;--gold2:#f0c96a;
-  --white:#f0eee8;--muted:rgba(240,238,232,0.5);
-  --serif:'DM Serif Display',Georgia,serif;
-  --sans:'DM Sans',system-ui,sans-serif;
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--sans);background:var(--navy);color:var(--white);min-height:100vh;}
-...
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen AML - BCCL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --p-color: #004a80;
+            --a-color: #b8860b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: #f2f4f7; color: #1a1a1a; }
+
+        header {
+            background: var(--p-color);
+            color: white;
+            text-align: center;
+            padding: 36px 20px 28px;
+            border-bottom: 4px solid #d4af37;
+        }
+        header h1 { font-size: 1.9rem; font-weight: 900; margin-bottom: 4px; letter-spacing: -0.5px; }
+        header p  { font-size: 0.9rem; font-weight: 600; opacity: 0.8; }
+        .header-date { font-size: 0.72rem; opacity: 0.6; margin-top: 6px; font-weight: 400; }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .tab-btn {
+            padding: 14px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 0.78rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #777;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { color: #333; }
+        .tab-btn.active { color: var(--p-color); border-bottom-color: var(--p-color); }
+        .tab-count {
+            display: inline-block;
+            background: #eee;
+            color: #555;
+            font-size: 0.6rem;
+            padding: 1px 6px;
+            border-radius: 10px;
+            margin-left: 5px;
+            font-weight: 800;
+        }
+        .tab-btn.active .tab-count { background: var(--p-color); color: white; }
+
+        .page { display: none; padding: 28px 16px 60px; min-height: 80vh; }
+        .page.active { display: block; }
+        #noticias        { background: #f0f7ff; }
+        #actualizaciones { background: #fffdf5; }
+
+        .section-header {
+            max-width: 1100px;
+            margin: 0 auto 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .section-title  { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #888; }
+        .section-period { font-size: 0.65rem; color: #aaa; font-weight: 600; }
+
+        .grid {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-left: 5px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: transform 0.18s, box-shadow 0.18s;
+        }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        #noticias .card        { border-left-color: #1a73e8; }
+        #actualizaciones .card { border-left-color: var(--a-color); }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.58rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            align-self: flex-start;
+        }
+        #noticias .badge        { background: #dbeafe; color: #1e40af; }
+        #actualizaciones .badge { background: #fef3cd; color: #856404; }
+
+        h3 { font-size: 1.05rem; font-weight: 800; line-height: 1.35; }
+        h3 a { text-decoration: none; color: #111; }
+        h3 a:hover { color: var(--p-color); text-decoration: underline; }
+        .fecha { font-size: 0.65rem; color: #aaa; font-weight: 600; }
+        .desc  { font-size: 0.85rem; color: #555; line-height: 1.55; flex: 1; }
+
+        footer {
+            background: var(--p-color);
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            padding: 18px;
+            font-size: 0.68rem;
+            border-top: 3px solid #d4af37;
+        }
+        footer strong { color: #d4af37; }
+
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.4rem; }
+            .tab-btn { padding: 12px 12px; font-size: 0.68rem; }
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
-"""
 
-HERO = (
-    '<header class="hero">'
-    '<div class="hero-bg"></div>'
-    '<div class="hero-content">'
-    '<p class="hero-eyebrow">&#9679; Monitor de Cumplimiento &middot; AML &middot; Argentina</p>'
-    '<h1 class="hero-title">Prevenci&oacute;n del<br><em>Lavado de Activos</em></h1>'
-    '<p class="hero-sub">Actualizado: ' + fecha_hoy + '</p>'
-    '</div></header>'
-)
+<header>
+    <h1>Resumen de Noticias AML &#128240;</h1>
+    <p>Monitor de Cumplimiento &middot; BCCL &#128181;&#128200;</p>
+    <p class="header-date">""" + fecha_hoy + """</p>
+</header>
 
-TICKER = (
-    '<div class="ticker-bar"><div class="ticker-inner">'
-    '<span>UIF &middot; Unidad de Informaci&oacute;n Financiera</span>'
-    '<span>BCRA &middot; Banco Central de la Rep&uacute;blica Argentina</span>'
-    '<span>CNV &middot; Comisi&oacute;n Nacional de Valores</span>'
-    '<span>GAFI &middot; Grupo de Acci&oacute;n Financiera Internacional</span>'
-    '<span>ARCA &middot; Agencia de Recaudaci&oacute;n y Control Aduanero</span>'
-    '<span>PLA/FT &middot; Prevenci&oacute;n del Lavado de Activos y Financiamiento del Terrorismo</span>'
-    '</div></div>'
-)
+<div class="tabs">
+    <button class="tab-btn active" onclick="showTab('noticias', this)">
+        Noticias <span class="tab-count">""" + str(cnt_n) + """</span>
+    </button>
+    <button class="tab-btn" onclick="showTab('actualizaciones', this)">
+        Actualizaciones Normativas <span class="tab-count">""" + str(cnt_a) + """</span>
+    </button>
+</div>
 
-NAV = (
-    '<nav class="nav-bar"><div class="nav-inner">'
-    '<button class="tab-btn active" onclick="showTab(\'noticias\',this)">'
-    'Noticias <span class="tab-count">' + cnt_n + '</span></button>'
-    '<button class="tab-btn" onclick="showTab(\'actualizaciones\',this)">'
-    'Actualizaciones Normativas <span class="tab-count">' + cnt_a + '</span></button>'
-    '</div></nav>'
-)
+<div id="noticias" class="page active">
+    <div class="section-header">
+        <span class="section-title">Argentina &middot; Lavado &middot; Blanqueo &middot; D&oacute;lar</span>
+        <span class="section-period">&#218;ltimos 5 d&iacute;as</span>
+    </div>
+    <div class="grid">""" + cards_noticias + """</div>
+</div>
 
-PAGE_N = (
-    '<div id="noticias" class="page active">'
-    '<div class="section-label">'
-    '<span class="section-label-text">&Uacute;ltimos ' + str(DIAS_NOTICIAS) + ' d&iacute;as &middot; AML &middot; Lavado &middot; Blanqueo</span>'
-    '<div class="section-label-line"></div></div>'
-    '<div class="news-grid">' + cards_noticias + '</div>'
-    '</div>'
-)
+<div id="actualizaciones" class="page">
+    <div class="section-header">
+        <span class="section-title">UIF &middot; GAFI &middot; BCRA &middot; ARCA &middot; CNV &mdash; Resoluciones y Normativas</span>
+        <span class="section-period">&#218;ltimos 30 d&iacute;as</span>
+    </div>
+    <div class="grid">""" + cards_actualizaciones + """</div>
+</div>
 
-PAGE_A = (
-    '<div id="actualizaciones" class="page">'
-    '<div class="section-label">'
-    '<span class="section-label-text">&Uacute;ltimos 30 d&iacute;as &middot; Resoluciones &middot; Circulares &middot; UIF &middot; GAFI &middot; BCRA &middot; ARCA &middot; CNV</span>'
-    '<div class="section-label-line"></div></div>'
-    '<div class="reg-grid">' + cards_actualizaciones + '</div>'
-    '</div>'
-)
+<footer>
+    Generado para <strong>AML &middot; BCCL</strong> &nbsp;&middot;&nbsp;
+    Fuente: Google News &nbsp;&middot;&nbsp; """ + fecha_hoy + """
+</footer>
 
-FOOTER = (
-    '<footer>Generado autom&aacute;ticamente para <strong>AML &middot; BCCL</strong>'
-    ' &nbsp;&middot;&nbsp; Fuente: Google News &nbsp;&middot;&nbsp; ' + fecha_hoy + '</footer>'
-)
-
-JS = (
-    '<script>'
-    'function showTab(tabId,btn){'
-    'document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));'
-    'document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));'
-    'document.getElementById(tabId).classList.add("active");'
-    'btn.classList.add("active");'
-    'window.scrollTo({top:0,behavior:"smooth"});'
-    '}'
-    '</script>'
-)
-
-TAIL = '</body></html>'
-
-html_final = HEAD + HERO + TICKER + NAV + PAGE_N + PAGE_A + FOOTER + JS + TAIL
+<script>
+function showTab(tabId, btn) {
+    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>"""
 
 with open("index.html", "w", encoding="utf-8") as f:
-    f.write(html_final)
+    f.write(HTML)
 
-print(f"OK · {cnt_n} noticias · {cnt_a} actualizaciones · {fecha_hoy}")
+print("OK — index.html generado: {} noticias | {} actualizaciones | {}".format(
+    cnt_n, cnt_a, fecha_hoy))
