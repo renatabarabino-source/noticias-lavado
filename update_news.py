@@ -1,134 +1,139 @@
 import feedparser
-import pandas as pd
-from datetime import datetime, timedelta
 import urllib.parse
 from bs4 import BeautifulSoup
 import os
 import socket
+from datetime import datetime, timedelta
+import requests
 
 socket.setdefaulttimeout(20)
 
 # --- CONFIGURACIÓN ---
-# Keywords más específicas para evitar temas domésticos
-KEYWORDS = ['"lavado de activos"', '"lavado de dinero"', '"prevención de lavado"', 'uif', 'aml', 'procelac', 'gafi', '"crimen económico"']
-# Filtro negativo extremo contra tips de limpieza y otros ruidos
-NEGATIVE_FILTER = [
-    'dólar blue', 'dolar blue', 'clima', 'fútbol', 'pronóstico', 'vinagre', 'almohada', 'ropa', 
-    'mancha', 'bicarbonato', 'limpiar', 'limpieza', 'jabón', 'colchón', 'secadora', 'lavadero',
-    'baño', 'cocina', 'receta', 'sábana', 'pelo', 'cutis', 'autos'
-]
+KEYWORDS_NORMATIVA = ['uif', 'gafi', 'bcra', 'arca', 'cnv', 'ley de lavado', 'resolución']
+KEYWORDS_ESCANDALOS = ['corrupción', 'causa', 'justicia', 'lavado de dinero', 'famoso', 'empresario', 'imputado']
+NEGATIVE_FILTER = ['aguacate', 'salud', 'receta', 'dieta', 'fútbol', 'pronóstico', 'clima', 'vinagre', 'almohada', 'mancha', 'jabón']
+
 DIAS_ATRAS = 5
-MAX_NOTICIAS = 25 # Para asegurar que siempre veas más de 20
+MAX_NOTICIAS = 30
 
-# Fuentes Argentinas
-ARG_SITES = ["lanacion.com.ar", "tn.com.ar", "infobae.com", "ambito.com", "perfil.com", "pagina12.com.ar"]
-GOV_SITES = ["afip.gob.ar", "argentina.gob.ar", "cnv.gov.ar"]
-
-OFFICIAL_FEEDS = {
-    "Fiscales.gob.ar": "https://www.fiscales.gob.ar/criminalidad-economica/feed/",
-    "GAFI / FATF": "https://www.fatf-gafi.org/en/publications.rss"
-}
+def get_image(url):
+    try:
+        res = requests.get(url, timeout=5)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        img = soup.find("meta", property="og:image")
+        return img["content"] if img else ""
+    except:
+        return ""
 
 def clean_summary(text):
-    if not text: return "Sin resumen disponible."
+    if not text: return "Sin descripción disponible."
     soup = BeautifulSoup(text, "html.parser")
-    return soup.get_text()[:300] + "..."
+    return soup.get_text()[:180] + "..."
 
-def fetch_news():
-    noticias_finales = []
+def fetch_category(query, is_intl=False):
+    gl = "US" if is_intl else "AR"
+    hl = "en" if is_intl else "es-419"
+    url = f"https://news.google.com/rss/search?q={urllib.parse.quote(query)}+when:{DIAS_ATRAS}d&hl={hl}&gl={gl}&ceid={gl}:es-419"
+    entries = feedparser.parse(url).entries
     
-    # 1. Prioridad 1: Fiscales.gob.ar (Obligatorio)
-    f_fiscales = feedparser.parse(OFFICIAL_FEEDS["Fiscales.gob.ar"]).entries
-    for entry in f_fiscales:
-        noticias_finales.append({
-            "Fuente": "PROCELAC", "Titular": entry.title, "Resumen": clean_summary(entry.summary),
-            "Link": entry.link, "Fecha": entry.get('published', 'Reciente'), "Tipo": "oficial", "Peso": 1
-        })
-
-    # 2. Prioridad 2: Medios Argentinos
-    site_query = " OR ".join([f"site:{s}" for s in (ARG_SITES + GOV_SITES)])
-    keyword_query = " OR ".join(KEYWORDS)
-    full_query = f"({site_query}) ({keyword_query})"
-    url_gn = f"https://news.google.com/rss/search?q={urllib.parse.quote(full_query)}+when:{DIAS_ATRAS}d&hl=es-419&gl=AR&ceid=AR:es-419"
-    
-    entries = feedparser.parse(url_gn).entries
+    news_list = []
     for entry in entries:
         t_low = entry.title.lower()
         if not any(n in t_low for n in NEGATIVE_FILTER):
-            fuente = entry.source.title if hasattr(entry, 'source') else "Medio Argentino"
-            noticias_finales.append({
-                "Fuente": fuente, "Titular": entry.title, "Resumen": clean_summary(entry.summary),
-                "Link": entry.link, "Fecha": entry.get('published', 'Reciente'), "Tipo": "prensa", "Peso": 2
+            img = get_image(entry.link)
+            news_list.append({
+                "fuente": entry.source.title if hasattr(entry, 'source') else "Medio",
+                "titular": entry.title,
+                "link": entry.link,
+                "fecha": entry.get('published', 'Reciente'),
+                "resumen": clean_summary(entry.summary if 'summary' in entry else ""),
+                "img": img
             })
+    return news_list[:MAX_NOTICIAS]
 
-    # 3. Prioridad 3: GAFI / Internacional (solo si sobra cupo)
-    f_gafi = feedparser.parse(OFFICIAL_FEEDS["GAFI / FATF"]).entries
-    for entry in f_gafi:
-        noticias_finales.append({
-            "Fuente": "GAFI/FATF", "Titular": entry.title, "Resumen": clean_summary(entry.summary),
-            "Link": entry.link, "Fecha": entry.get('published', 'Reciente'), "Tipo": "internacional", "Peso": 3
-        })
-
-    # Eliminar duplicados y ordenar por importancia (Oficiales primero)
-    seen = set()
-    resultado = []
-    # Ordenamos por "Peso" para que PROCELAC quede arriba
-    noticias_finales.sort(key=lambda x: x['Peso'])
-    
-    for n in noticias_finales:
-        if n['Titular'] not in seen:
-            resultado.append(n)
-            seen.add(n['Titular'])
-            
-    return resultado[:MAX_NOTICIAS]
+# Procesamiento de solapas
+news_principal = fetch_category(" OR ".join([f'"{k}"' for k in KEYWORDS_NORMATIVA]) + " site:argentina.gob.ar OR site:fiscales.gob.ar")
+news_argentina = fetch_category(" OR ".join([f'"{k}"' for k in KEYWORDS_ESCANDALOS]) + " site:infobae.com OR site:lanacion.com.ar OR site:ambito.com")
+news_intl = fetch_category("lavado de activos OR money laundering site:fatf-gafi.org OR site:elpais.com OR site:cnn.com", is_intl=True)
 
 # --- GENERACIÓN DE HTML ---
-data = fetch_news()
-html_content = f"""
+html_template = f"""
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AML News Dashboard - Credicoop</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Resumen de Noticias AML - BCCL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root {{ --primary: #004a80; --accent: #2ecc71; --bg: #f4f7f9; --text: #2c3e50; }}
-        body {{ font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); line-height: 1.6; margin: 0; padding: 0; }}
-        header {{ background: var(--primary); color: white; padding: 2rem 1rem; text-align: center; }}
-        .container {{ max-width: 900px; margin: 2rem auto; padding: 0 1rem; }}
-        .card {{ background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 6px solid #d1d8e0; }}
-        .card.oficial {{ border-left-color: var(--accent); background: #fafffa; }}
-        .card.prensa {{ border-left-color: #3498db; }}
-        .badge {{ display: inline-block; padding: 0.2rem 0.6rem; border-radius: 10px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }}
-        .badge-oficial {{ background: #e8f5e9; color: #2e7d32; }}
-        .badge-prensa {{ background: #e3f2fd; color: #1565c0; }}
-        h3 {{ margin: 0.5rem 0; font-size: 1.2rem; }}
-        h3 a {{ color: var(--primary); text-decoration: none; font-weight: 800; }}
-        .meta {{ font-size: 0.8rem; color: #7f8c8d; }}
-        .summary {{ font-size: 0.9rem; margin-top: 10px; color: #444; }}
+        :root {{ --p-color: #004a80; --a-color: #3498db; --i-color: #d4af37; }}
+        body {{ font-family: 'Inter', sans-serif; margin: 0; background: #fdfdfd; }}
+        
+        header {{ background: #004a80; color: white; text-align: center; padding: 40px 20px; }}
+        header h1 {{ margin: 0; font-weight: 900; font-size: 2.5rem; }}
+        header p {{ margin: 10px 0 0; font-weight: 700; font-size: 1.3rem; opacity: 0.9; }}
+
+        /* Tabs */
+        .tabs {{ display: flex; justify-content: center; background: #fff; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+        .tab-btn {{ padding: 15px 30px; border: none; background: none; cursor: pointer; font-weight: 700; font-size: 1rem; color: #666; transition: 0.3s; border-bottom: 4px solid transparent; }}
+        .tab-btn.active {{ color: var(--p-color); border-bottom-color: var(--p-color); }}
+
+        /* Backgrounds & Designs */
+        .page {{ display: none; padding: 40px 20px; min-height: 80vh; transition: 0.5s; }}
+        .page.active {{ display: block; }}
+        
+        #principal {{ background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), url('https://images.unsplash.com/photo-1554224155-1696413575b3?auto=format&fit=crop&w=1920&q=80'); background-size: cover; background-attachment: fixed; }}
+        #argentina {{ background: linear-gradient(rgba(240,248,255,0.9), rgba(240,248,255,0.9)), url('https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?auto=format&fit=crop&w=1920&q=80'); background-size: cover; }}
+        #international {{ background: linear-gradient(rgba(245,245,245,0.9), rgba(245,245,245,0.9)), url('https://images.unsplash.com/photo-1436491865332-7a61a109c0f2?auto=format&fit=crop&w=1920&q=80'); background-size: cover; }}
+
+        .grid {{ max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }}
+        
+        /* Card Style (Jekyll inspired) */
+        .card {{ background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.08); transition: 0.3s; display: flex; flex-direction: column; }}
+        .card:hover {{ transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.15); }}
+        .card img {{ width: 100%; height: 200px; object-fit: cover; }}
+        .card-content {{ padding: 20px; flex-grow: 1; }}
+        .badge {{ display: inline-block; padding: 4px 10px; border-radius: 5px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; }}
+        
+        /* Category specific badges */
+        .p-badge {{ background: #e3f2fd; color: #004a80; }}
+        .a-badge {{ background: #fff3e0; color: #e65100; }}
+        .i-badge {{ background: #eeeeee; color: #424242; }}
+        
+        h3 {{ margin: 0 0 10px; font-size: 1.1rem; line-height: 1.4; }}
+        h3 a {{ text-decoration: none; color: #333; }}
+        .desc {{ font-size: 0.9rem; color: #666; }}
     </style>
 </head>
 <body>
     <header>
-        <h1>🗞️ AML News Dashboard</h1>
-        <p>Principales Noticias de Lavados de Activos para AML BCCL| {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>
+        <h1>Resumen de Noticias 📰</h1>
+        <p>Para AML BCCL 💵📈</p>
     </header>
-    <div class="container">
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('principal')">PRINCIPAL (NORMATIVAS)</button>
+        <button class="tab-btn" onclick="showTab('argentina')">ARGENTINA</button>
+        <button class="tab-btn" onclick="showTab('international')">INTERNACIONAL</button>
+    </div>
+
+    <div id="principal" class="page active"><div class="grid">{''.join([f'<div class="card">{"<img src="+n["img"]+">" if n["img"] else ""}<div class="card-content"><span class="badge p-badge">{n["fuente"]}</span><h3><a href="{n["link"]}" target="_blank">{n["titular"]}</a></h3><p class="desc">{n["resumen"]}</p></div></div>' for n in news_principal])}</div></div>
+    
+    <div id="argentina" class="page"><div class="grid">{''.join([f'<div class="card">{"<img src="+n["img"]+">" if n["img"] else ""}<div class="card-content"><span class="badge a-badge">{n["fuente"]}</span><h3><a href="{n["link"]}" target="_blank">{n["titular"]}</a></h3><p class="desc">{n["resumen"]}</p></div></div>' for n in news_argentina])}</div></div>
+    
+    <div id="international" class="page"><div class="grid">{''.join([f'<div class="card">{"<img src="+n["img"]+">" if n["img"] else ""}<div class="card-content"><span class="badge i-badge">{n["fuente"]}</span><h3><a href="{n["link"]}" target="_blank">{n["titular"]}</a></h3><p class="desc">{n["resumen"]}</p></div></div>' for n in news_intl])}</div></div>
+
+    <script>
+        function showTab(tabId) {{
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }}
+    </script>
+</body>
+</html>
 """
 
-for n in data:
-    badge_class = "badge-oficial" if n['Tipo'] == "oficial" else "badge-prensa"
-    html_content += f"""
-    <div class="card {n['Tipo']}">
-        <span class="badge {badge_class}">{n['Fuente']}</span>
-        <h3><a href="{n['Link']}" target="_blank">{n['Titular']}</a></h3>
-        <div class="meta">{n['Fecha']}</div>
-        <div class="summary">{n['Resumen']}</div>
-    </div>
-    """
-
-html_content += "</div></body></html>"
-
 with open("index.html", "w", encoding="utf-8") as f:
-    f.write(html_content)
+    f.write(html_template)
