@@ -4,58 +4,45 @@ from bs4 import BeautifulSoup
 import socket
 from datetime import datetime, timezone, timedelta
 import requests
-import email.utils
 
 # Configuración técnica
 socket.setdefaulttimeout(30)
 tz_ar = timezone(timedelta(hours=-3))
 now_ar = datetime.now(tz_ar)
-meses = ['enero','febrero','marzo','abril','mayo','junio',
-         'julio','agosto','septiembre','octubre','noviembre','diciembre']
-fecha_hoy = "{} de {} de {} - {} hs (ARG)".format(
-    now_ar.day, meses[now_ar.month - 1], now_ar.year, now_ar.strftime('%H:%M')
-)
 
-# 1. FILTROS NEGATIVOS (Cero limpieza, historia o policial común)
-NEGATIVE_FILTER = [
+# 1. DEFINICIÓN DE VARIABLES
+BASE_AML = '("lavado de dinero" OR "lavado de activos" OR "blanqueo de capitales" OR "blanqueamiento")'
+
+# 2. FILTROS DE RUIDO (Cero aguacate, deportes o limpieza)
+GENERAL_NEG = [
     'dental', 'dientes', 'odontologia', 'aguacate', 'receta', 'futbol', 'clima',
     'vinagre', 'almohada', 'mancha', 'jabon', 'limpieza', 'ropa', 'suavizante',
-    'lavarropas', 'pelo', 'cutis', 'dieta', 'cocina', 'hace 100 años', 'efemerides',
-    'tiroteo', 'asesinato', 'sicario', 'homicidio', 'choque', 'accidente', 'herido',
-    'sangre', 'fallecio', 'muerto', 'cadaver', 'victima', 'vecinos', 'persecucion'
+    'lavarropas', 'pelo', 'cutis', 'dieta', 'cocina', 'alianza lima', 'via expresa'
 ]
 
-# 2. KEYWORDS TÉCNICAS (La noticia DEBE tener algo de esto para ser válida)
-TECHNICAL_KEYWORDS = [
-    'uif', 'gafi', 'bcra', 'cnv', 'arca', 'procelac', 'testaferro', 'financiero', 
-    'capitales', 'maniobra', 'empresa', 'sociedad', 'trama', 'judicial', 'causa', 
-    'imputado', 'procesado', 'lavado', 'activos', 'dinero', 'blanqueo', 'aml', 'compliance'
-]
+# 3. FILTRO POLICIAL (Para Actualizaciones)
+POLICIAL_NEG = GENERAL_NEG + ['policial', 'crimen', 'asesinato', 'robo', 'detenido', 'allanamiento', 'tiroteo']
 
-SITES_AR = (
-    "site:cronista.com OR site:ambito.com OR site:iprofesional.com OR site:infobae.com OR "
-    "site:lanacion.com.ar OR site:clarin.com OR site:tn.com.ar OR site:perfil.com OR "
-    "site:baenegocios.com OR site:eldiarioar.com OR site:pagina12.com.ar OR "
-    "site:lapoliticaonline.com OR site:eleconomista.com.ar OR site:gacetamercantil.com"
+# Portales privados (Prensa)
+PORTALES_PRENSA = (
+    "site:infobae.com OR site:clarin.com OR site:lanacion.com.ar OR site:pagina12.com.ar OR "
+    "site:tn.com.ar OR site:perfil.com OR site:iprofesional.com OR site:ambito.com OR site:cronista.com"
 )
-
-SITES_INTL = "site:bloomberg.com OR site:reuters.com OR site:cnnespanol.cnn.com OR site:elpais.com"
-
-DIAS_NOTICIAS = 5
-MAX_NOTICIAS = 25 # Tope solicitado
 
 session = requests.Session()
 session.headers.update({'User-Agent': 'Mozilla/5.0 NewsBot/BCCL'})
 
 def clean_summary(text):
-    if not text: return "Sin descripcion disponible."
-    return BeautifulSoup(text, "html.parser").get_text()[:240] + "..."
+    if not text: return "Sin descripción."
+    try:
+        return BeautifulSoup(text, "html.parser").get_text()[:220] + "..."
+    except:
+        return str(text)[:220] + "..."
 
-def fetch_news_strict(query, limit, neg_filter, dias):
-    q_encoded = urllib.parse.quote(query) + "+when:" + str(dias) + "d"
-    url = "https://news.google.com/rss/search?q={}&hl=es-419&gl=AR&ceid=AR:es-419".format(q_encoded)
-    fecha_limite = datetime.now(timezone.utc) - timedelta(days=dias)
-    
+def fetch_news_refined(query, limit, neg_list):
+    url = "https://news.google.com/rss/search?q={}&hl=es-419&gl=AR&ceid=AR:es-419".format(
+        urllib.parse.quote(query + " when:5d")
+    )
     try:
         resp = session.get(url, timeout=15)
         entries = feedparser.parse(resp.content).entries
@@ -64,56 +51,63 @@ def fetch_news_strict(query, limit, neg_filter, dias):
 
     results = []
     seen_titles = set()
-    
     for entry in entries:
         t_low = entry.title.lower()
-        s_low = entry.summary.lower() if hasattr(entry, 'summary') else ""
-        
-        # --- FILTRADO DE RELEVANCIA ---
-        # 1. Longitud y links basura
-        if len(entry.title) < 20 or entry.link.count('/') < 4: continue
-        
-        # 2. Filtro negativo
-        if any(w in t_low for w in neg_filter): continue
-        
-        # 3. VALIDACIÓN TÉCNICA (Blindaje contra policiales/limpieza)
-        if not any(k in t_low or k in s_low for k in TECHNICAL_KEYWORDS): continue
-
-        if entry.title not in seen_titles:
-            # Filtro de fecha
-            pub_raw = entry.get('published', '')
-            if pub_raw:
-                try:
-                    pub_dt = datetime(*email.utils.parsedate(pub_raw)[:6], tzinfo=timezone.utc)
-                    if pub_dt < fecha_limite: continue
-                except: pass
-            
+        if entry.title not in seen_titles and not any(n in t_low for n in neg_list):
             results.append({
-                "fuente":  entry.source.title if hasattr(entry, 'source') else "Medio",
+                "fuente": entry.source.title if hasattr(entry, 'source') else "Medio",
                 "titular": entry.title.replace('"', '&quot;'),
-                "link":    entry.link,
-                "fecha":   pub_raw[:16] if pub_raw else 'Reciente',
+                "link": entry.link,
+                "fecha": entry.get('published', 'Reciente')[:16],
                 "resumen": clean_summary(entry.summary if 'summary' in entry else "")
             })
             seen_titles.add(entry.title)
-
     return results[:limit]
 
 # --- PROCESAMIENTO ---
-# Buscamos noticias con frases exactas para mayor precisión
-q_arg = '("lavado de activos" OR "lavado de dinero" OR "blanqueo de capitales") AND ({})'.format(SITES_AR)
-q_intl = '("money laundering" OR "lavado de activos") AND ({})'.format(SITES_INTL)
+news_noticias = fetch_news_refined(f'({BASE_AML} OR "dolar blue") AND ({PORTALES_PRENSA})', 25, GENERAL_NEG)
+news_actualizaciones = fetch_category = fetch_news_refined(f'({BASE_AML}) AND ("uif" OR "bcra" OR "arca" OR "cnv" OR "normativa")', 6, POLICIAL_NEG)
 
-news_arg = fetch_news_strict(q_arg, 20, NEGATIVE_FILTER, DIAS_NOTICIAS)
-news_intl = fetch_news_strict(q_intl, 10, NEGATIVE_FILTER, DIAS_NOTICIAS)
+# --- GENERACIÓN DE HTML ---
+fecha_actual_texto = now_ar.strftime('%d/%m/%Y %H:%M')
 
-# Unir y limitar a 25
-titulares_arg = set(n["titular"] for n in news_arg)
-news_intl = [n for n in news_intl if n["titular"] not in titulares_arg]
-news_noticias = (news_arg + news_intl)[:MAX_NOTICIAS]
+def make_cards(news_list, color):
+    if not news_list: return '<p style="text-align:center;color:#888;padding:40px;">No hay noticias nuevas.</p>'
+    return "".join([
+        f'<div class="card" style="border-left:6px solid {color}"><span class="badge">{n["fuente"]}</span><p style="font-size:0.7rem;color:#999">{n["fecha"]}</p><h3><a href="{n["link"]}" target="_blank">{n["titular"]}</a></h3><p>{n["resumen"]}</p></div>'
+        for n in news_list
+    ])
 
-# Actualizaciones (30 días)
-q_act = '("uif" OR "gafi" OR "bcra" OR "cnv" OR "arca") AND ("normativa" OR "resolucion" OR "ley")'
-news_act = fetch_news_strict(q_act, 6, NEGATIVE_FILTER + ['policial'], 30)
+HTML_CONTENT = f"""
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AML Monitor - BCCL</title>
+    <style>
+        body {{ font-family: sans-serif; background: #f4f7f9; margin: 0; padding: 20px; }}
+        header {{ background: #004a80; color: white; text-align: center; padding: 20px; border-radius: 8px; margin-bottom: 20px; }}
+        .grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; max-width: 1100px; margin: 0 auto; }}
+        .card {{ background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
+        .badge {{ background: #eee; padding: 2px 5px; font-size: 0.7rem; font-weight: bold; }}
+        h3 a {{ text-decoration: none; color: #333; }}
+        .tabs {{ display: flex; justify-content: center; margin-bottom: 20px; gap: 10px; }}
+        .tab-btn {{ padding: 10px 20px; cursor: pointer; border: none; background: #ddd; font-weight: bold; }}
+        .active-btn {{ background: #004a80; color: white; }}
+    </style>
+</head>
+<body>
+    <header><h1>Resumen AML 📰</h1><p>BCCL &middot; {fecha_actual_texto}</p></header>
+    <div class="tabs">
+        <button class="tab-btn active-btn" onclick="location.reload()">NOTICIAS</button>
+    </div>
+    <div class="grid">{make_cards(news_noticias, '#1a73e8')}</div>
+    <h2 style="text-align:center; margin-top:40px;">ACTUALIZACIONES</h2>
+    <div class="grid">{make_cards(news_actualizaciones, '#d4af37')}</div>
+</body>
+</html>
+"""
 
-# (Aquí se mantiene tu código de generación de HTML igual al anterior)
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(HTML_CONTENT)
