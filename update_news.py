@@ -12,10 +12,10 @@ socket.setdefaulttimeout(15)
 # --- CONFIGURACIÓN DE BÚSQUEDA Y FILTROS ---
 BASE_AML = '("lavado de dinero" OR "lavado de activos" OR "blanqueo" OR "blanqueamiento" OR "AML")'
 
-# Filtros para evitar temas dentales, de salud o limpieza
+# Filtros para evitar temas ajenos al cumplimiento
 NEGATIVE_FILTER = [
     'dental', 'dientes', 'odontologia', 'aguacate', 'receta', 'futbol', 'clima', 
-    'vinagre', 'almohada', 'mancha', 'jabon', 'limpieza', 'ropa', 'suavizante', 
+    'vinagre', 'almohada', 'mancha', 'jabon','sexual', 'tips', 'limpieza', 'deporte', 'ropa', 'suavizante', 
     'lavarropas', 'pelo', 'cutis', 'dieta', 'cocina'
 ]
 
@@ -25,7 +25,7 @@ POLICIAL_FILTER = NEGATIVE_FILTER + [
     'tiroteo', 'narco', 'banda', 'sicario', 'muerto', 'tragedia'
 ]
 
-# Lista consolidada de portales privados solicitada
+# Portales privados seleccionados
 SITES_PRIVADOS = (
     "site:infobae.com OR site:clarin.com OR site:lanacion.com.ar OR site:pagina12.com.ar OR "
     "site:minutouno.com OR site:tn.com.ar OR site:perfil.com OR site:eldestapeweb.com OR "
@@ -35,7 +35,7 @@ SITES_PRIVADOS = (
     "site:cnnespanol.cnn.com OR site:elpais.com"
 )
 
-DIAS_ATRAS = 5
+DIAS_ATRAS = 5 # Límite de 5 días solicitado
 session = requests.Session()
 session.headers.update({'User-Agent': 'Mozilla/5.0 NewsBot/BCCL'})
 
@@ -47,7 +47,7 @@ def clean_text(text):
         return str(text)[:240] + "..."
 
 def fetch_category(query, limit, negative_keywords):
-    # Forzamos la búsqueda en Argentina
+    # Aplicamos el filtro de tiempo 'when:5d' en la URL
     url = "https://news.google.com/rss/search?q={}&hl=es-419&gl=AR&ceid=AR:es-419".format(
         urllib.parse.quote(query + " when:{}d".format(DIAS_ATRAS))
     )
@@ -61,31 +61,36 @@ def fetch_category(query, limit, negative_keywords):
     seen_titles = set()
     for entry in entries:
         t_low = entry.title.lower()
-        # Filtro de links vacíos y palabras prohibidas
         if len(entry.title) < 15 or entry.link.count('/') < 4:
             continue
+        
+        # Verificación de duplicados y filtros
         if entry.title not in seen_titles and not any(n in t_low for n in negative_keywords):
+            # Extraemos la fecha de la noticia
+            fecha_noticia = entry.get('published', 'Reciente')
+            
             news_list.append({
                 "fuente": entry.source.title if hasattr(entry, 'source') else "Medio",
                 "titular": entry.title.replace('"', '&quot;'),
                 "link": entry.link,
+                "fecha": fecha_noticia, # Fecha añadida según solicitud
                 "resumen": clean_text(entry.summary if 'summary' in entry else "")
             })
             seen_titles.add(entry.title)
     return news_list[:limit]
 
-# --- PROCESAMIENTO DE LAS 2 SOLAPAS ---
+# --- PROCESAMIENTO ---
 
-# 1. NOTICIAS (Prensa General): Tope 25
+# 1. NOTICIAS: Tope 25 noticias de prensa de los últimos 5 días
 q_noticias = '({} OR "dolar blue") AND ("lavado" OR "blanqueo") AND ({})'.format(BASE_AML, SITES_PRIVADOS)
 news_noticias = fetch_category(q_noticias, limit=25, negative_keywords=NEGATIVE_FILTER)
 
-# 2. ACTUALIZACIONES (Normativas): Solo portales privados, SIN policiales. Tope 6
+# 2. ACTUALIZACIONES: Tope 6 noticias normativas de los últimos 5 días
 q_actualizaciones = '({}) AND ({}) AND ("normativa" OR "resolucion" OR "arca" OR "uif" OR "gafi" OR "cnv" OR "bcra" OR "ley")'.format(BASE_AML, SITES_PRIVADOS)
 news_actualizaciones = fetch_category(q_actualizaciones, limit=6, negative_keywords=POLICIAL_FILTER)
 
 # --- GENERACIÓN DEL HTML ---
-fecha_actual = datetime.now(timezone(timedelta(hours=-3))).strftime('%d/%m/%Y %H:%M')
+fecha_actual_gen = datetime.now(timezone(timedelta(hours=-3))).strftime('%d/%m/%Y %H:%M')
 
 html_template = """
 <!DOCTYPE html>
@@ -116,6 +121,7 @@ html_template = """
         .badge {{ display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; background: #f0f2f5; margin-bottom: 8px; text-transform: uppercase; }}
         h3 {{ margin: 0 0 8px; font-size: 1.05rem; font-weight: 800; line-height: 1.3; }}
         h3 a {{ text-decoration: none; color: #111; }}
+        .date {{ font-size: 0.7rem; color: #888; margin-bottom: 10px; font-weight: 600; }}
         .desc {{ font-size: 0.85rem; color: #555; line-height: 1.5; }}
         footer {{ background: var(--azul); color: white; text-align: center; padding: 20px; font-size: 0.7rem; margin-top: 40px; }}
         @media (max-width: 600px) {{ header h1 {{ font-size: 1.4rem; }} .tab-btn {{ padding: 12px 10px; font-size: 0.75rem; }} }}
@@ -124,7 +130,7 @@ html_template = """
 <body>
     <header>
         <h1>Resumen de Noticias AML 📰</h1>
-        <p>Monitor de Cumplimiento &middot; BCCL &middot; {fecha}</p>
+        <p>Monitor de Cumplimiento &middot; BCCL &middot; {fecha_gen}</p>
     </header>
     <div class="tabs">
         <button class="tab-btn active" onclick="showTab('noticias', this)">Noticias</button>
@@ -149,15 +155,16 @@ html_template = """
 def make_cards(news_list):
     if not news_list:
         return '<p style="text-align:center;color:#888;grid-column:1/-1;padding:40px;">No se encontraron noticias recientes.</p>'
+    # Incluimos la fecha en cada tarjeta
     return "".join([
-        '<div class="card"><span class="badge">{}</span><h3><a href="{}" target="_blank">{}</a></h3><p class="desc">{}</p></div>'.format(
-            n["fuente"], n["link"], n["titular"], n["resumen"]
+        '<div class="card"><span class="badge">{}</span><p class="date">{}</p><h3><a href="{}" target="_blank">{}</a></h3><p class="desc">{}</p></div>'.format(
+            n["fuente"], n["fecha"], n["link"], n["titular"], n["resumen"]
         ) for n in news_list
     ])
 
 # Generar el archivo final
 final_html = html_template.format(
-    fecha=fecha_actual,
+    fecha_gen=fecha_actual_gen,
     cards_noticias=make_cards(news_noticias),
     cards_actualizaciones=make_cards(news_actualizaciones)
 )
@@ -165,4 +172,4 @@ final_html = html_template.format(
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(final_html)
 
-print("Proceso completado: index.html generado con {} noticias.".format(len(news_noticias) + len(news_actualizaciones)))
+print("Proceso completado: index.html generado con noticias fechadas.")
