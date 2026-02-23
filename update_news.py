@@ -10,23 +10,28 @@ socket.setdefaulttimeout(30)
 tz_ar = timezone(timedelta(hours=-3))
 now_ar = datetime.now(tz_ar)
 
-# 1. DEFINICIÓN DE VARIABLES
-BASE_AML = '("lavado de dinero" OR "lavado de activos" OR "blanqueo de capitales" OR "blanqueamiento")'
-
-# 2. FILTROS DE RUIDO (Cero aguacate, deportes o limpieza)
-GENERAL_NEG = [
+# --- CONFIGURACIÓN DE FILTROS ---
+# Bloqueo total de temas que no son de tu área
+NEGATIVE_FILTER = [
     'dental', 'dientes', 'odontologia', 'aguacate', 'receta', 'futbol', 'clima',
     'vinagre', 'almohada', 'mancha', 'jabon', 'limpieza', 'ropa', 'suavizante',
-    'lavarropas', 'pelo', 'cutis', 'dieta', 'cocina', 'alianza lima', 'via expresa'
+    'lavarropas', 'pelo', 'cutis', 'dieta', 'cocina', 'alianza lima', 'cotizacion',
+    'precio del dolar', 'dolar hoy', 'via expresa', 'transito'
 ]
 
-# 3. FILTRO POLICIAL (Para Actualizaciones)
-POLICIAL_NEG = GENERAL_NEG + ['policial', 'crimen', 'asesinato', 'robo', 'detenido', 'allanamiento', 'tiroteo']
+# Bloqueo de noticias policiales comunes
+POLICIAL_NEG = NEGATIVE_FILTER + [
+    'policia', 'policial', 'crimen', 'asesinato', 'robo', 'detenido', 'allanamiento',
+    'tiroteo', 'narco', 'banda', 'sicario', 'droga', 'estupefacientes', 'homicidio',
+    'preso', 'carcel', 'penal', 'detencion', 'captura', 'fallecio', 'muerto', 
+    'sospechoso', 'delincuente', 'asalto', 'secuestro', 'enfrentamiento'
+]
 
 # Portales privados (Prensa)
 PORTALES_PRENSA = (
     "site:infobae.com OR site:clarin.com OR site:lanacion.com.ar OR site:pagina12.com.ar OR "
-    "site:tn.com.ar OR site:perfil.com OR site:iprofesional.com OR site:ambito.com OR site:cronista.com"
+    "site:minutouno.com OR site:tn.com.ar OR site:perfil.com OR site:iprofesional.com OR "
+    "site:ambito.com OR site:cronista.com OR site:eleconomista.com.ar OR site:baenegocios.com"
 )
 
 session = requests.Session()
@@ -40,6 +45,7 @@ def clean_summary(text):
         return str(text)[:220] + "..."
 
 def fetch_news_refined(query, limit, neg_list):
+    # Forzamos los últimos 5 días
     url = "https://news.google.com/rss/search?q={}&hl=es-419&gl=AR&ceid=AR:es-419".format(
         urllib.parse.quote(query + " when:5d")
     )
@@ -64,17 +70,23 @@ def fetch_news_refined(query, limit, neg_list):
             seen_titles.add(entry.title)
     return results[:limit]
 
-# --- PROCESAMIENTO ---
-news_noticias = fetch_news_refined(f'({BASE_AML} OR "dolar blue") AND ({PORTALES_PRENSA})', 25, GENERAL_NEG)
-news_actualizaciones = fetch_category = fetch_news_refined(f'({BASE_AML}) AND ("uif" OR "bcra" OR "arca" OR "cnv" OR "normativa")', 6, POLICIAL_NEG)
+# --- PROCESAMIENTO DE LAS 2 SOLAPAS ---
+# 1. NOTICIAS (Prensa General): Tope 25
+q_noticias = '("lavado de dinero" OR "lavado de activos" OR "blanqueo") AND ({})'.format(PORTALES_PRENSA)
+news_noticias = fetch_news_refined(q_noticias, 25, NEGATIVE_FILTER)
+
+# 2. ACTUALIZACIONES (Normativas): Requiere organismos y palabras AML
+q_actualizaciones = '("lavado" OR "blanqueo" OR "AML") AND ("UIF" OR "GAFI" OR "BCRA" OR "ARCA" OR "CNV") AND ({})'.format(PORTALES_PRENSA)
+news_actualizaciones = fetch_category = fetch_news_refined(q_actualizaciones, 6, POLICIAL_NEG)
 
 # --- GENERACIÓN DE HTML ---
 fecha_actual_texto = now_ar.strftime('%d/%m/%Y %H:%M')
 
-def make_cards(news_list, color):
-    if not news_list: return '<p style="text-align:center;color:#888;padding:40px;">No hay noticias nuevas.</p>'
+def make_cards(news_list, color_class):
+    if not news_list:
+        return '<p style="text-align:center;color:#888;grid-column:1/-1;padding:40px;">No se encontraron noticias técnicas recientes.</p>'
     return "".join([
-        f'<div class="card" style="border-left:6px solid {color}"><span class="badge">{n["fuente"]}</span><p style="font-size:0.7rem;color:#999">{n["fecha"]}</p><h3><a href="{n["link"]}" target="_blank">{n["titular"]}</a></h3><p>{n["resumen"]}</p></div>'
+        f'<div class="card {color_class}"><span class="badge">{n["fuente"]}</span><p class="date">Publicado: {n["fecha"]}</p><h3><a href="{n["link"]}" target="_blank">{n["titular"]}</a></h3><p class="desc">{n["resumen"]}</p></div>'
         for n in news_list
     ])
 
@@ -85,26 +97,45 @@ HTML_CONTENT = f"""
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AML Monitor - BCCL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body {{ font-family: sans-serif; background: #f4f7f9; margin: 0; padding: 20px; }}
-        header {{ background: #004a80; color: white; text-align: center; padding: 20px; border-radius: 8px; margin-bottom: 20px; }}
-        .grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; max-width: 1100px; margin: 0 auto; }}
-        .card {{ background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
-        .badge {{ background: #eee; padding: 2px 5px; font-size: 0.7rem; font-weight: bold; }}
-        h3 a {{ text-decoration: none; color: #333; }}
-        .tabs {{ display: flex; justify-content: center; margin-bottom: 20px; gap: 10px; }}
-        .tab-btn {{ padding: 10px 20px; cursor: pointer; border: none; background: #ddd; font-weight: bold; }}
-        .active-btn {{ background: #004a80; color: white; }}
+        :root {{ --azul: #004a80; --dorado: #d4af37; --celeste: #1a73e8; }}
+        body {{ font-family: 'Inter', sans-serif; background: #f4f7f9; margin: 0; }}
+        header {{ background: var(--azul); color: white; text-align: center; padding: 30px; border-bottom: 4px solid var(--dorado); }}
+        .tabs {{ display: flex; justify-content: center; background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
+        .tab-btn {{ padding: 15px 25px; border: none; background: none; cursor: pointer; font-weight: 700; text-transform: uppercase; color: #666; border-bottom: 3px solid transparent; transition: 0.3s; }}
+        .tab-btn.active {{ color: var(--azul); border-bottom-color: var(--azul); }}
+        .page {{ display: none; padding: 20px; min-height: 80vh; }}
+        .page.active {{ display: block; }}
+        .grid {{ max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }}
+        .card {{ background: white; border-radius: 8px; padding: 20px; border-left: 6px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }}
+        .c-news {{ border-left-color: var(--celeste); }}
+        .c-updates {{ border-left-color: var(--dorado); }}
+        .badge {{ font-size: 0.6rem; font-weight: 900; background: #eee; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; }}
+        .date {{ font-size: 0.65rem; color: #999; margin: 5px 0; font-weight: 600; }}
+        h3 {{ font-size: 1.1rem; margin: 10px 0; line-height: 1.4; }}
+        h3 a {{ text-decoration: none; color: #222; }}
+        .desc {{ font-size: 0.85rem; color: #666; line-height: 1.5; }}
+        @media (max-width: 600px) {{ header h1 {{ font-size: 1.4rem; }} .tab-btn {{ padding: 12px 10px; font-size: 0.75rem; }} .grid {{ grid-template-columns: 1fr; }} }}
     </style>
 </head>
 <body>
-    <header><h1>Resumen AML 📰</h1><p>BCCL &middot; {fecha_actual_texto}</p></header>
+    <header><h1>Resumen de Noticias AML 📰</h1><p>Monitor de Cumplimiento &middot; BCCL &middot; {fecha_actual_texto}</p></header>
     <div class="tabs">
-        <button class="tab-btn active-btn" onclick="location.reload()">NOTICIAS</button>
+        <button class="tab-btn active" onclick="showTab('noticias', this)">Noticias</button>
+        <button class="tab-btn" onclick="showTab('actualizaciones', this)">Actualizaciones</button>
     </div>
-    <div class="grid">{make_cards(news_noticias, '#1a73e8')}</div>
-    <h2 style="text-align:center; margin-top:40px;">ACTUALIZACIONES</h2>
-    <div class="grid">{make_cards(news_actualizaciones, '#d4af37')}</div>
+    <div id="noticias" class="page active"><div class="grid">{make_cards(news_noticias, 'c-news')}</div></div>
+    <div id="actualizaciones" class="page"><div class="grid">{make_cards(news_actualizaciones, 'c-updates')}</div></div>
+    <script>
+        function showTab(t, b) {{
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(t).classList.add('active');
+            b.classList.add('active');
+            window.scrollTo(0,0);
+        }}
+    </script>
 </body>
 </html>
 """
