@@ -10,7 +10,10 @@ socket.setdefaulttimeout(30)
 tz_ar = timezone(timedelta(hours=-3))
 now_ar = datetime.now(tz_ar)
 
-# 1. FILTROS DE RUIDO GENERAL (Salud, Hogar, Deportes)
+# 1. DEFINICIÓN DE VARIABLES (Evita el NameError)
+BASE_AML = '("lavado de dinero" OR "lavado de activos" OR "blanqueo de capitales" OR "blanqueamiento")'
+
+# 2. FILTROS DE RUIDO (Aguacate, Dental, Deportes, Tránsito)
 GENERAL_NEG = [
     'dental', 'dientes', 'odontologia', 'aguacate', 'receta', 'futbol', 'clima',
     'vinagre', 'almohada', 'mancha', 'jabon', 'limpieza', 'ropa', 'suavizante',
@@ -18,7 +21,7 @@ GENERAL_NEG = [
     'goles', 'campeonato', 'via expresa', 'transito'
 ]
 
-# 2. FILTRO POLICIAL ESTRICTO (Para la pestaña Actualizaciones)
+# 3. FILTRO POLICIAL ESTRICTO (Para la pestaña Actualizaciones)
 POLICIAL_NEG = GENERAL_NEG + [
     'policia', 'policial', 'crimen', 'asesinato', 'robo', 'detenido', 'allanamiento',
     'tiroteo', 'narco', 'banda', 'sicario', 'droga', 'estupefacientes', 'homicidio',
@@ -33,7 +36,7 @@ STRICT_KEYWORDS = [
     'procelac', 'financiero', 'compliance'
 ]
 
-# Portales privados seleccionados
+# Portales privados seleccionados (Prensa)
 PORTALES_PRENSA = (
     "site:infobae.com OR site:clarin.com OR site:lanacion.com.ar OR site:pagina12.com.ar OR "
     "site:minutouno.com OR site:tn.com.ar OR site:perfil.com OR site:eldestapeweb.com OR "
@@ -47,9 +50,13 @@ session.headers.update({'User-Agent': 'Mozilla/5.0 NewsBot/BCCL'})
 
 def clean_summary(text):
     if not text: return "Sin descripción."
-    return BeautifulSoup(text, "html.parser").get_text()[:220] + "..."
+    try:
+        return BeautifulSoup(text, "html.parser").get_text()[:220] + "..."
+    except:
+        return str(text)[:220] + "..."
 
 def fetch_news_refined(query, limit, neg_list, mandatory_aml=False):
+    # Filtro de tiempo: 5 días
     q_encoded = urllib.parse.quote(query + " when:5d")
     url = f"https://news.google.com/rss/search?q={q_encoded}&hl=es-419&gl=AR&ceid=AR:es-419"
     
@@ -70,7 +77,7 @@ def fetch_news_refined(query, limit, neg_list, mandatory_aml=False):
         if any(w in t_low for w in neg_list):
             continue
             
-        # Filtro 2: Validación obligatoria de palabras clave AML
+        # Filtro 2: Validación obligatoria de palabras clave AML (Solo para Actualizaciones)
         if mandatory_aml:
             if not any(k in t_low or k in s_low for k in STRICT_KEYWORDS):
                 continue
@@ -82,7 +89,7 @@ def fetch_news_refined(query, limit, neg_list, mandatory_aml=False):
                 "fuente": entry.source.title if hasattr(entry, 'source') else "Medio",
                 "titular": entry.title.replace('"', '&quot;'),
                 "link": entry.link,
-                "fecha": fecha_noticia[:16],
+                "fecha": fecha_noticia[:16], # Muestra la fecha solicitada
                 "resumen": clean_summary(entry.summary if 'summary' in entry else "")
             })
             seen_titles.add(entry.title)
@@ -91,7 +98,7 @@ def fetch_news_refined(query, limit, neg_list, mandatory_aml=False):
 
 # --- PROCESAMIENTO DE LAS 2 SOLAPAS ---
 
-# 1. NOTICIAS (Prensa): Tope 25 noticias
+# 1. NOTICIAS (Prensa General): Tope 25 noticias
 q_noticias = f'({BASE_AML} OR "dolar blue") AND ({PORTALES_PRENSA})'
 news_noticias = fetch_news_refined(q_noticias, 25, GENERAL_NEG)
 
@@ -99,12 +106,12 @@ news_noticias = fetch_news_refined(q_noticias, 25, GENERAL_NEG)
 q_actualizaciones = f'({BASE_AML}) AND ({PORTALES_PRENSA}) AND ("uif" OR "bcra" OR "arca" OR "cnv" OR "normativa")'
 news_actualizaciones = fetch_news_refined(q_actualizaciones, 6, POLICIAL_NEG, mandatory_aml=True)
 
-# --- GENERACIÓN DE HTML ---
+# --- GENERACIÓN DE HTML (Optimizado para Web y Celu) ---
 def make_cards(news_list, color_class):
     if not news_list:
-        return '<p style="text-align:center;color:#888;grid-column:1/-1;padding:40px;">No se encontraron noticias bajo estos filtros técnicos.</p>'
+        return '<p style="text-align:center;color:#888;grid-column:1/-1;padding:40px;">No se encontraron noticias técnicas recientes.</p>'
     return "".join([
-        f'<div class="card {color_class}"><span class="badge">{n["fuente"]}</span><p class="date">{n["fecha"]}</p><h3><a href="{n["link"]}" target="_blank">{n["titular"]}</a></h3><p class="desc">{n["resumen"]}</p></div>'
+        f'<div class="card {color_class}"><span class="badge">{n["fuente"]}</span><p class="date">Publicado: {n["fecha"]}</p><h3><a href="{n["link"]}" target="_blank">{n["titular"]}</a></h3><p class="desc">{n["resumen"]}</p></div>'
         for n in news_list
     ])
 
@@ -121,8 +128,8 @@ HTML_CONTENT = f"""
         :root {{ --azul: #004a80; --dorado: #d4af37; --celeste: #1a73e8; }}
         body {{ font-family: 'Inter', sans-serif; background: #f4f7f9; margin: 0; }}
         header {{ background: var(--azul); color: white; text-align: center; padding: 30px; border-bottom: 4px solid var(--dorado); }}
-        .tabs {{ display: flex; justify-content: center; background: white; sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
-        .tab-btn {{ padding: 15px 25px; border: none; background: none; cursor: pointer; font-weight: 700; text-transform: uppercase; color: #666; border-bottom: 3px solid transparent; }}
+        .tabs {{ display: flex; justify-content: center; background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
+        .tab-btn {{ padding: 15px 25px; border: none; background: none; cursor: pointer; font-weight: 700; text-transform: uppercase; color: #666; border-bottom: 3px solid transparent; transition: 0.3s; }}
         .tab-btn.active {{ color: var(--azul); border-bottom-color: var(--azul); }}
         .page {{ display: none; padding: 20px; }}
         .page.active {{ display: block; }}
@@ -130,15 +137,16 @@ HTML_CONTENT = f"""
         .card {{ background: white; border-radius: 8px; padding: 20px; border-left: 6px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }}
         .c-news {{ border-left-color: var(--celeste); }}
         .c-updates {{ border-left-color: var(--dorado); }}
-        .badge {{ font-size: 0.6rem; font-weight: 900; background: #eee; padding: 2px 5px; border-radius: 3px; }}
-        .date {{ font-size: 0.7rem; color: #999; margin: 5px 0; }}
-        h3 {{ font-size: 1.1rem; margin: 10px 0; }}
+        .badge {{ font-size: 0.6rem; font-weight: 900; background: #eee; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; }}
+        .date {{ font-size: 0.65rem; color: #999; margin: 5px 0; font-weight: 600; }}
+        h3 {{ font-size: 1.1rem; margin: 10px 0; line-height: 1.4; }}
         h3 a {{ text-decoration: none; color: #222; }}
-        .desc {{ font-size: 0.85rem; color: #666; line-height: 1.4; }}
+        .desc {{ font-size: 0.85rem; color: #666; line-height: 1.5; }}
+        @media (max-width: 600px) {{ header h1 {{ font-size: 1.4rem; }} .tab-btn {{ padding: 12px 10px; font-size: 0.75rem; }} .grid {{ grid-template-columns: 1fr; }} }}
     </style>
 </head>
 <body>
-    <header><h1>Resumen AML 📰</h1><p>BCCL &middot; {fecha_gen}</p></header>
+    <header><h1>Resumen de Noticias AML 📰</h1><p>Monitor de Cumplimiento &middot; BCCL &middot; {fecha_gen}</p></header>
     <div class="tabs">
         <button class="tab-btn active" onclick="showTab('noticias', this)">Noticias</button>
         <button class="tab-btn" onclick="showTab('actualizaciones', this)">Actualizaciones</button>
@@ -151,6 +159,7 @@ HTML_CONTENT = f"""
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(t).classList.add('active');
             b.classList.add('active');
+            window.scrollTo(0,0);
         }}
     </script>
 </body>
