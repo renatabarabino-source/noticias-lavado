@@ -1,14 +1,201 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resumen AML - BCCL</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <style>
-        ...
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resumen AML - BCCL</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+    :root { --azul: #004a80; --gold: #d4af37; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #f2f4f7; color: #1a1a1a; }
+
+    header {
+        background: var(--azul);
+        color: white;
+        text-align: center;
+        padding: 36px 20px 28px;
+        border-bottom: 4px solid var(--gold);
+    }
+    header h1 { font-size: 1.9rem; font-weight: 900; margin-bottom: 4px; }
+    header p  { font-size: 0.9rem; font-weight: 600; opacity: 0.8; }
+    .header-date { font-size: 0.72rem; opacity: 0.6; margin-top: 6px; font-weight: 400; }
+
+    .tabs {
+        display: flex;
+        justify-content: center;
+        background: #fff;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .tab-btn {
+        padding: 15px 28px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        font-size: 0.82rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #777;
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s;
+    }
+    .tab-btn:hover { color: #333; }
+    .tab-btn.active { color: var(--azul); border-bottom-color: var(--azul); }
+    .tab-count {
+        display: inline-block;
+        background: #eee;
+        color: #555;
+        font-size: 0.6rem;
+        padding: 1px 6px;
+        border-radius: 10px;
+        margin-left: 6px;
+        font-weight: 800;
+    }
+    .tab-btn.active .tab-count { background: var(--azul); color: white; }
+
+    .page { display: none; padding: 28px 16px 60px; min-height: 80vh; }
+    .page.active { display: block; }
+    #noticias        { background: #f0f7ff; }
+    #actualizaciones { background: #fffdf5; }
+
+    .section-header {
+        max-width: 1100px;
+        margin: 0 auto 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e0e0e0;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .section-title  { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #888; }
+    .section-period { font-size: 0.65rem; color: #aaa; font-weight: 600; }
+
+    .grid {
+        max-width: 1100px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 18px;
+    }
+
+    .card {
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border-left: 5px solid #ddd;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: transform 0.18s, box-shadow 0.18s;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+    #noticias .card        { border-left-color: #1a73e8; }
+    #actualizaciones .card { border-left-color: #b8860b; }
+
+    .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.58rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        align-self: flex-start;
+    }
+    #noticias .badge        { background: #dbeafe; color: #1e40af; }
+    #actualizaciones .badge { background: #fef3cd; color: #856404; }
+
+    h3 { font-size: 1.05rem; font-weight: 800; line-height: 1.35; }
+    h3 a { text-decoration: none; color: #111; }
+    h3 a:hover { color: var(--azul); text-decoration: underline; }
+    .fecha { font-size: 0.65rem; color: #aaa; font-weight: 600; }
+    .desc  { font-size: 0.85rem; color: #555; line-height: 1.55; }
+
+    footer {
+        background: var(--azul);
+        color: rgba(255,255,255,0.5);
+        text-align: center;
+        padding: 18px;
+        font-size: 0.68rem;
+        border-top: 3px solid var(--gold);
+    }
+    footer strong { color: var(--gold); }
+
+    @media (max-width: 600px) {
+        header h1 { font-size: 1.4rem; }
+        .tab-btn { padding: 12px 14px; font-size: 0.72rem; }
+        .grid { grid-template-columns: 1fr; }
+    }
+</style>
 </head>
 <body>
-...
+<header>
+<h1>Resumen de Noticias AML &#128240;</h1>
+<p>Monitor de Cumplimiento &middot; BCCL</p>
+<p class="header-date">23 de febrero de 2026 - 09:45 hs (ARG)</p>
+</header>
+<div class="tabs">
+<button class="tab-btn active" onclick="showTab('noticias', this)">
+Noticias <span class="tab-count">14</span>
+</button>
+<button class="tab-btn" onclick="showTab('actualizaciones', this)">
+Actualizaciones Normativas <span class="tab-count">6</span>
+</button>
+</div>
+<div id="noticias" class="page active">
+<div class="section-header">
+<span class="section-title">Argentina &middot; Lavado &middot; Blanqueo de Activos &middot; Internacional</span>
+<span class="section-period">Ultimos 5 dias</span>
+</div>
+<div class="grid">
+<div class="card"><span class="badge">El Cronista</span><h3><a href="https://news.google.com/rss/articles/CBMixgFBVV95cUxPVzEwbnFjekstV19aVnNXR1A2dXp3Rk1GS2RZNEIxYUlhZU1LY3NNa1JhY3dubXZwYmtfb2RCVHhnQm5MOXhyQUNjdTZDSGQ4ekF5MHhHQUJPT3hack1SMjZpTU9LWXM0dmk2YUdvSUYwSU1KbkdkdDBPM2EwS0pPLXh1dkZhcnlFWHhWWERNa2xyNktpTUlrVjJSMExYeEY1ZDNBalAzTE1ObEtiNlFfUEtfLXJJS0RiUEFUMEFiRmhPcm15UGfSAcYBQVVfeXFMT1cxMG5xY3pLLVdfWlZzV0dQNnV6d0ZNRktkWTRCMWFJYWVNS2NzTWtSYWN3bm12cGJrX29kQlR4Z0JuTDl4ckFDY3U2Q0hkOHpBeTB4R0FCT094WnJNUjI2aU1PS1lzNHZpNmFHb0lGMElNSm5HZHQwTzNhMEtKTy14dXZGYXJ5RVh4VlhETWtscjZLaU1Ja1YyUjBMWHhGNWQzQWpQM0xNTmxLYjZRX1BLXy1ySUtEYlBBVDBBYkZoT3JteVBn?oc=5" target="_blank" rel="noopener">AFIP será querellante en causa contra Báez por lavado de dinero - El Cronista</a></h3><p class="fecha">Thu, 18 Apr 2013</p><p class="desc">AFIP será querellante en causa contra Báez por lavado de dinero  El Cronista...</p></div>
+<div class="card"><span class="badge">El Cronista</span><h3><a href="https://news.google.com/rss/articles/CBMiwAFBVV95cUxOVGZGNlFyeHNsMVVLSDRWSk1WRERuTnVLc0cya3dpZFNkendHSnRtTTBsUF9GMFdZTkRrUXRBWmlVUHhMQ2hSSXpZUVdISjJ6Qm43djAxeUNXQ3NJY3Vua1hyOXFMemZzcTN3YllYOVlTWHhadFFQOGxtLUo0V29jSDVydmZPLXB5WnBVT1RaQUpTOC1MVTNQM0Z6NS1ON3F0ZGc2TzdvbGlyNnpEV2ttX2l6UjZhSk5zUnhjdjc2WEvSAdsBQVVfeXFMTWw3cTNMRUJWdzQ5SThqaDhETTBNSk4zLXhhVHRPY2RDMlRvWUc0Mmw4LTJ1djRnU0NEYTk0Ry1jM3FudnBISm8xN0pQemJ5Y0NSNnNCdDEtX0N6UzVycHo4QWpiZENJRHNJWVJael83X3ZLb0FERjFzUVVCeVYxeWtTNllrMDBoS1RXTldJTnVUanVaelM4bkVLcmhMejJtNjN3aGQyeTVzUzB0S3FkTmFER0dNVmhrVXVUZ0pCMUNfOE14azZqMngwTThtVjRsUXdueFFMQVFQVVl3?oc=5" target="_blank" rel="noopener">Es oficial: el GAFI incluyó a Argentina en el listado de países bajo observación - El Cronista</a></h3><p class="fecha">Tue, 28 Jun 2011</p><p class="desc">Es oficial: el GAFI incluyó a Argentina en el listado de países bajo observación  El Cronista...</p></div>
+<div class="card"><span class="badge">El Cronista</span><h3><a href="https://news.google.com/rss/articles/CBMivgFBVV95cUxNZlhVWmYxMGcwUDFUbHBtc0JhNThWampnVXVoQkI5TWpob0lLODRLYkhIeDdTTHRxd2FJNGx6R2VJUzhNUUdpR21zN3hzNnR2OFJsUkJEOHFubE9zV3VwQnZYRU82a0gxZzFOdlZLeGM3MUF4aXA2RlkzUWxMMkRYNHFfOF91MDJnU3V6c1NaWkZmcmRQOV9nYmJjZWF0dU1DMkg2eUZBZUsxOHdkSE9fVTNpNjVVUS1DNXc0dl9B0gHYAUFVX3lxTE9tTzh5Y0NvMGtnaGNaVmx5QmRyeWFydXRiU3RYajBRUVU1UzUzZmNpZ05JNllHQmJoVjl4MFk5QWlnOFpsWnQ0Y0haZ0JtNUowQUdYeDY4SGx6UHZMd1NCRlU4b0RQWmdKam4wT2JieHZWN0k5aGlYZ2R6ZkFpU2RKM3MzeW9WUThzRmJ4QWF6Sjk5dmlqRXZWTTBIczZjZ09Cb1NHRXhhcGlSNnVzdHlaSUM0eWVZazlzbjMyYWJjblNCejlLUDJSeWdTcjBQX1JpaVkxc2pkWQ?oc=5" target="_blank" rel="noopener">Heller justificó el blanqueo de capitales: “Hay cuellos de botella que resolver - El Cronista</a></h3><p class="fecha">Fri, 10 May 2013</p><p class="desc">Heller justificó el blanqueo de capitales: “Hay cuellos de botella que resolver  El Cronista...</p></div>
+<div class="card"><span class="badge">Ambito</span><h3><a href="https://news.google.com/rss/articles/CBMitwFBVV95cUxQU2k0UE5UVGNRaVkxb2h0dU9Ya3l3N2VVV20wakFlRlBKbUZ6SXNEdFZ0NVJRYnhiejgwemNKYmR1QnBMSVdjREMyaFU3aHZ4Q2phM2pHdy1YNTFUNVplOU9NTEc3N0ZlODRhdjFrS2ZnV0w3QVROX3o4LVR5NXJxN1JjREdKZ19RS2ZaY0NhYjdpSEFSSGxoVDhyYXYzQTROd2Q5Sk9IVXk3dm9JMnpfSWtZRXJSS3PSAbwBQVVfeXFMUGpjcVVIemlIajhmQldWSmkteGFOS2hqQmlSNVZfckZxbUhIQTN0LWxNU0o0ZnJzeEYzTXBfMXJFVW92UnF0UXFrUXhJeGFNWEc4VW80V0R3VkY4d1NtYXlzbGl2ZkxRVnlfbU04Yi1Hb3FqZ1NzbXk3UzE2dTRILVN3RkhtUmJjY3lXc1dlX2pUVG1rMDRacGc4NTgzM0pJakpBMEhpaTlTYk1wTEhVNmNIcXkycmFiVnZxd28?oc=5" target="_blank" rel="noopener">Quique Felman volvió a Argentina tras su detención en EEUU y reiteró su inocencia - Ambito</a></h3><p class="fecha">Mon, 16 Feb 2026</p><p class="desc">Quique Felman volvió a Argentina tras su detención en EEUU y reiteró su inocencia  Ambito...</p></div>
+<div class="card"><span class="badge">Ambito</span><h3><a href="https://news.google.com/rss/articles/CBMi1AFBVV95cUxQbGNiZjZUZEhyaXdqaEFZYmFKSWszNW9PWXhTWlZ4YXhUVzF0WEhtZ185Qm1pdWtHSWlSemFXWDdLcGVyb2RVNTlHTDZjN0Q4TjdSeWNMSFBwV2Q1Rmd3UWlkSkpYTEF5T29QY19nR2M3YzBSRG5LTGlyMHJsYzAyX0ktTnFTaFQ2b25PZGpaZmpzUHN4d0lHNWllRWVzZWViQ3l4UzBsOGZnNjNUYUtvOW1wRDZITWNCUUlrX2thVTZVa2YyYXlOY042SG5NcXRhVEJRddIB2gFBVV95cUxPN0xfRlQyaFpRUU43OTlOanQ0YUdsTExhVjkwN3lzamdOZkNtdG1tN2syZzlHMTZCZm9zRV8teVRta08wVGNzZkNReEtJTDBIUXlfeVF3SS1mOThjM0RIem53R0tlNlA3b0ZFLWhaLW5RU2MwSW90aUdUeWwwajdZOEt1M2t5cWlJdkNyVVRYY1NKN2QwcXN3VTA1RG16enlvX1RtRzBQanNfQWhSTHRTZmpab3RzNVJ3cWFBQ1Jtbml2ZEtDOVdDeEVYT0E3aG8xTlVNTk9naFR2dw?oc=5" target="_blank" rel="noopener">Dólares del colchón: BCRA y UIF piden a los bancos evitar trabas innecesarias en los depósitos en efectivo - Ambito</a></h3><p class="fecha">Wed, 18 Feb 2026</p><p class="desc">Dólares del colchón: BCRA y UIF piden a los bancos evitar trabas innecesarias en los depósitos en efectivo  Ambito...</p></div>
+<div class="card"><span class="badge">Ambito</span><h3><a href="https://news.google.com/rss/articles/CBMirgFBVV95cUxNZEd6RjBOVGFrTmhzVm1IOFk0ejBTdmNOeG9hdXhjVWNvNElTVmtqMHpra3pUUmNMYVdkRVYwWnJEcTBjYlJRUFk5MTBpdWI0V3ZzNDlNTXA5UEJMMkk5YjRkZ0FleEJkdWc5ZWxic0FXcnJkZllsQjZ1YXNTNUl6a0hUbzc2MWJyXzNZeHpRZVVoZWYtVEI0bS1qV1BXSVhUYWhmN0Q3UU1pTlFOaFHSAbMBQVVfeXFMTVJYSW05SmgxZkhtX2tISzEwY0doM3BBV3dNd0wxYUMtd2szV3p5aGdrMW04MEEyM2VjOTlZZ2dYWEtiampPNm52dFJsUTRGRzJsc1ZOaWtpdVNUWEpOVGNxcDFJZGlUQ2xHVzktZWZ4bUM1M0ZIT1ZJdzdNYlRxTWlfblNTWDRJWVF4YWlZRm0zcTJrbjg2UTV2UmFaQTFlZmFfMl9UcnppN0hlWll0WFRUNEU?oc=5" target="_blank" rel="noopener">Miami suma su primer mirador público en altura y redefine su skyline - Ambito</a></h3><p class="fecha">Fri, 20 Feb 2026</p><p class="desc">Miami suma su primer mirador público en altura y redefine su skyline  Ambito...</p></div>
+<div class="card"><span class="badge">BBC</span><h3><a href="https://news.google.com/rss/articles/CBMiakFVX3lxTE5meW9aYTJfZVpoT1ozTUNERHN4QjluVzRLWFpBMFhoeWZKZUVmcnBFSVZPUlMtQ1NSenJvRnhITUpVX1FPZnM3a1NENE5ubWlYOWd2VjIwTUpsVVhVS2ZKY0hGdHpyTkZXcEHSAW9BVV95cUxPTHZOTjRfVHdyblk2dGRXeGhQcXU3a0Y5dkhQRmVaWGl1ZzBBamRwZWRJeGJXcGJWY0pfQW9GLXVvcklSNzNLNFpaZm43N2pCNjYxSHVXRmx4bmczYXEtWHVmZzRCOF8tVEdBdVFQdk0?oc=5" target="_blank" rel="noopener">La trágica muerte del &quot;Pirata de Culiacán&quot;, el youtuber de 17 años de México que insultó al peligroso narcotraficante &quot;El Mencho&quot; - BBC</a></h3><p class="fecha">Fri, 22 Dec 2017</p><p class="desc">La trágica muerte del "Pirata de Culiacán", el youtuber de 17 años de México que insultó al peligroso narcotraficante "El Mencho"  BBC...</p></div>
+<div class="card"><span class="badge">EL PAÍS</span><h3><a href="https://news.google.com/rss/articles/CBMivwFBVV95cUxPQVh1UDlKN2hHMExCZ0YwXzFqak1wN25VRGRISHZxUnJIVGl1SDBGS28zRXVLWjVvSTdyZmtqZ2ZTQTV1SF9HT3pzLWpteTAzS2xWeF9QTzNwQXV3RXp0d0NGR2VyZUtndTZoV2NzMFBoeHNuV1lCYXZyUGlMLUdoNkh1Zm9rTmxZbXV2QWFfdi1NQWllRnBSaGdHZzZ1Z3FFTkFTWXRkZDFpemk0a1VBVDNiVm1sSWxOTnVuYkNCVdIB0wFBVV95cUxNUEMwYkw1VllmSG02aGp2N0Qyb2RmUlhVVHpTQVlINXJzMGp6NXFZTGJtMzBJRGRBOHVITUREUExZY3VpREZWSDBTcGdmU2FqLUIzeTJ1U25pTXQ1SG5lbkZtNFpGMUx6WEJaaHREOHB0RmFpaVdNaC0xZkNLSjRTOVBGRVh4amhWdGpUaVBxejUwVVV3d05wSFZCcjE1ejNXUHJrNWVMTDhzZ0twT3dad1dYZkN2cGhIOXViZWJKWk5TakkxN1hmYS16SkV3SXZ1NXVj?oc=5" target="_blank" rel="noopener">El Cartel Jalisco Nueva Generación, una empresa criminal de turbulento ascenso - EL PAÍS</a></h3><p class="fecha">Mon, 23 Feb 2026</p><p class="desc">El Cartel Jalisco Nueva Generación, una empresa criminal de turbulento ascenso  EL PAÍS...</p></div>
+<div class="card"><span class="badge">BBC</span><h3><a href="https://news.google.com/rss/articles/CBMiW0FVX3lxTE5WTGEwa3Jsbjk2WFBQdGp6VzZIaXVXVDlLWkxVOTNoSzZQYmFfY0h5RzdmRF9PeU1xUEJjeEFjTjExN2s0aUhJSGFleWR2S2JnZEdPVS1VRHM5bjTSAWBBVV95cUxOb2VYM3dZVDN1QmdkNmptMjlrcWY4bjF2YjFSbDU0VnhFcm9iS09zdS1wX3cwRGpvR3htTl9XRExaNXVLR0NUVTg1WmttY3MxM19lUHdIUHRfcENCbXdmb3g?oc=5" target="_blank" rel="noopener">&quot;Carteles gringos&quot;: las pandillas que venden en EE.UU. la droga producida en América Latina (y por qué no tienen capos como &quot;El Chapo&quot;) - BBC</a></h3><p class="fecha">Tue, 07 Oct 2025</p><p class="desc">"Carteles gringos": las pandillas que venden en EE.UU. la droga producida en América Latina (y por qué no tienen capos como "El Chapo")  BBC...</p></div>
+<div class="card"><span class="badge">EL PAÍS</span><h3><a href="https://news.google.com/rss/articles/CBMilwFBVV95cUxPRVBQeWFsa2ZzbVl5QkIwWkdzeGxqelhWVXZGZThDcEZKTkV1TFNrVnRvTWRNdDZMYnkwNk14ZUlEZTA5ampVNE1zOFA3SVhhdWZyejZQUERNTHp4VTFPWng3VU1xNzI0eXM4QlUwcWhNRmpBcGZDc2hERDN5X2lRd3E5MDdidXpDMEFUd0tfaHNHV0FWT0VV0gGrAUFVX3lxTE1xbXVZbEwwS3ZLMG1OXzVSQlN2SXlkSzNCT1VmS1B2VUZoZm5VLUJRQ2RHaTgwM0IzanlkR1hvdUx6cXg4elpPajRuMzNFZDM4cEplSTQyVGpSNW9rLWUwaDR0TG9sXzh1OHF2VnU3c002am1DVE1sanhRNjJidFpvMDc1RzJpaHpZTjl3eDMtUllyZ0sxOGNidGdqNlBZMlNnWWRyNFRNSHFJRQ?oc=5" target="_blank" rel="noopener">Noboa contra todos: el cerco al disenso en Ecuador - EL PAÍS</a></h3><p class="fecha">Sun, 22 Feb 2026</p><p class="desc">Noboa contra todos: el cerco al disenso en Ecuador  EL PAÍS...</p></div>
+<div class="card"><span class="badge">EL PAÍS</span><h3><a href="https://news.google.com/rss/articles/CBMisAFBVV95cUxPUEV3Vk42YkdfbFJCQ05PQUc5eF9ZMURFd193YTF0TXEyUXhfZS1DMXo4TEFhZ1habXdMTWJBdk5jamxpdWZKWjRzRkdKT0JLQW1LYzZZTVo0R1AweFdEQ3JLOWlkT1E0bzg4eG1qcUo3Q1VCNmJHM3RVSzF6UUxicXhrOTFWUGl6UWVadVhDQTBPaGZ4aUwzWmlkMUh3VG9UTlk1SmFYbWRUTnBYZ0FpRdIBxAFBVV95cUxPb05aN2l3TmlpbEVLQkRzVktEN2RGYkRnWWdkNjBPa3NESk1oYlNYYUhBY1ZvOVoyRi02MVdlN0xHTmN2WHJHV0ZMMDMzSFFlZFFOX21Ca1VDM3ROTWFXLURSRHBvLVhNU0Q4Tmt3ejhkeEtpVlRPU1M4NVUtYlNMN3pBMDBVNUg0UTlCaHlMRG41NUt0TF9vU2x2TWlqU3VTLTJYV3lIcmMtZzFmRzdKZjZRSS0xdUFYZldIcDZRcFdMQ1lT?oc=5" target="_blank" rel="noopener">El Mencho, el capo discreto que revolucionó el mapa criminal de México - EL PAÍS</a></h3><p class="fecha">Sun, 22 Feb 2026</p><p class="desc">El Mencho, el capo discreto que revolucionó el mapa criminal de México  EL PAÍS...</p></div>
+<div class="card"><span class="badge">CNN en Español</span><h3><a href="https://news.google.com/rss/articles/CBMimAFBVV95cUxNV25PZWhSVFlkSC1tZEdVQm9ZZ2p4Si1qZkFLemJyNkllR2w1MzYweEtlbHNsMnJiQ2xtazV0ODI5cFFxNGFmXzVqOWswRW9WN1lRMEJSOGt3enRDc2hqT3V4U1FFaDZqQzNtNjFxaDlJam5xdVBVZlBGclYwMWgwYVFFcm5zX0o5QV9Fek1aQ2VhSk0yVWt3Uw?oc=5" target="_blank" rel="noopener">Esto advierte sobre el futuro de Cuba uno de sus historiadores más reputados - CNN en Español</a></h3><p class="fecha">Fri, 20 Feb 2026</p><p class="desc">Esto advierte sobre el futuro de Cuba uno de sus historiadores más reputados  CNN en Español...</p></div>
+<div class="card"><span class="badge">Bloomberg</span><h3><a href="https://news.google.com/rss/articles/CBMivAFBVV95cUxQUkozbjVBd3JEbWdvSUJsY0dMVzd0MXNtblZBak4tNkJrTzBwOHhSbWlaQ29SN2xlUHhWOUthNWFva1NNcmM5R3lHeXNvS0J0eFNZVk5hdGRYNVo2ZnhCelJMeG1RS19OWm5fb2VMMHhqNXZzdWxtdWxkOHg2R3g4Z3JSOHF6OHVFcHBaVHd2MnhxSzVYTFZnb0I3MG5famdMSXhvTVNqS0JuZnpKTjhVMVhZd3NKbkdjSDM5Sg?oc=5" target="_blank" rel="noopener">Detienen al alcalde de Guayaquil por investigación de lavado de dinero - Bloomberg</a></h3><p class="fecha">Tue, 10 Feb 2026</p><p class="desc">Detienen al alcalde de Guayaquil por investigación de lavado de dinero  Bloomberg...</p></div>
+<div class="card"><span class="badge">BBC</span><h3><a href="https://news.google.com/rss/articles/CBMikAFBVV95cUxPNk9IcmNCQ0tESURVeG1QTXJXZkEyU1N2ZGgyS1kxWGIxN0E2SnBVZmdpT0ZuYnMxUjBGVEdTS1VWY2J1dTVZWHJkS1hUYTZ6Y0pqZEdGRzhiSFV5TTZpWFVscEpOUk1ZVUNVMGszYUNtZnh0NnBfTGtqZ2pDM3hQOG9kM0pvcXVGWUN2NHZWbGg?oc=5" target="_blank" rel="noopener">Los fondos &quot;non sanctos&quot; del banco del Vaticano - BBC</a></h3><p class="fecha">Tue, 03 Apr 2012</p><p class="desc">Los fondos "non sanctos" del banco del Vaticano  BBC...</p></div>
+</div></div>
+<div id="actualizaciones" class="page">
+<div class="section-header">
+<span class="section-title">UIF &middot; GAFI &middot; BCRA &middot; ARCA &middot; CNV &mdash; Resoluciones y Normativas</span>
+<span class="section-period">Ultimos 30 dias</span>
+</div>
+<div class="grid">
+<div class="card"><span class="badge">Marval O’Farrell Mairal</span><h3><a href="https://news.google.com/rss/articles/CBMimgFBVV95cUxOTHJ6M1gzZzZWeE1HbnhzWnFCYVY0OG5VeUw3T3NIS3FlTXV5VEtMend5bl8xbW04LUFwWGhFb28zUkw2QzVOWGNtSkFVQTAwTUUwME9pNEJfRk9weVBkcS1WaEhCdzNpY3NERTZGMFplV2NfYktwaGVRd3dyZEJqb0JkOFpkMnJmcWtsR3lISGZiTUFkeFFaOW1n?oc=5" target="_blank" rel="noopener">La UIF actualiza su normativa sobre Lavado de Activos - Marval O’Farrell Mairal</a></h3><p class="fecha">Thu, 26 Jun 2025</p><p class="desc">La UIF actualiza su normativa sobre Lavado de Activos  Marval O’Farrell Mairal...</p></div>
+<div class="card"><span class="badge">Agencia Noticias Argentinas</span><h3><a href="https://news.google.com/rss/articles/CBMi7gFBVV95cUxQTU1lN2dZejNsQmF0M1M4WDNEN2EyeC1ZSTROUmQzYXc2bmZuZE5iU0tOLVN4aVNfalppT0VZQldXOUsybC1NbG1LZVcyQ1ZXSGwzMXk5cnk0TnBXUmJFWVZEM1d1el9SVnRrTHA1djZfdzREVUlVejhKQktraEpWMFhnbGszUHZtRUZhR05kdkVJdVh3LXJNQjNOd2VXOV8wdkQzQWduV1h4dzJrWXhZRW1jNkE2M3BTQm5fSDZWUy1ncWdPbzU2bDBBVE42UzdCUV8zY2h5d1N6VG5pbWZnRXExajJvVWRXalVBeGVR0gH8AUFVX3lxTE8yenEtakRQa0V2Q0YtYlFXVnMxbmJFZnllTmpoRjVsNkVvMlh5MHBpaE9XSXB1OEhlYkp0eDMweVJ0RHh6bmwxTHlxUzRydU9JcTFlcllnUXdzQkd4cVZjUm94NnptWEh4d1RrTjVBUDhvOXB4NUpsU0VzNmtNbG1vS1FBN3FPazA4dC0zQkVLWWg3UFMydHFDdFd5YU9LRVoxUk8xZWtIVkJpZF9Rdk1mb1dRb0wtWmx3ZnJDcVRGOEJEMlBXM21WZEZobnBkWTJnVjFmTUItU3AzM3AtT3FpNzhPeDVCMGpWMzNOTy1KeWw1MFZGM0o3ZFphVQ?oc=5" target="_blank" rel="noopener">Blanqueo: ARCA suma requisitos para percibir el reintegro impositivo por ingresos en exceso - Agencia Noticias Argentinas</a></h3><p class="fecha">Wed, 03 Dec 2025</p><p class="desc">Blanqueo: ARCA suma requisitos para percibir el reintegro impositivo por ingresos en exceso  Agencia Noticias Argentinas...</p></div>
+<div class="card"><span class="badge">Página|12</span><h3><a href="https://news.google.com/rss/articles/CBMinAFBVV95cUxPT2VUX2VRSklkZmJXRkQ2QlF6VmM0TzAyNE1JTUZDTElORzZIZFg0Yl8zcU50M2lvYzc0VXMxeUhzZEJ6Q0RwMDE5R2pjRzBmWnN4em1ERVgzaExOMExSMThXTlptb1l1SUNsemgtWF93SWhvTXdNWTRiSnU5dFM1ZHZyemtUczduaGl3Ry1yck9UWlNMLTEtRXAyck4?oc=5" target="_blank" rel="noopener">Todos los detalles del nuevo blanqueo de dólares no declarados que anunció el Gobierno - Página|12</a></h3><p class="fecha">Thu, 22 May 2025</p><p class="desc">Todos los detalles del nuevo blanqueo de dólares no declarados que anunció el Gobierno  Página|12...</p></div>
+<div class="card"><span class="badge">Infobae</span><h3><a href="https://news.google.com/rss/articles/CBMi3AFBVV95cUxPVWdGRm1OUDFZQW9wc2s5cUpObTZQMFhyMXloXzFSdzNRWEZIUDlUaVo2dHdDVVVIRjNuWU5JZWNNMkhvcHdYbnhoNGFQU0ZXdENTYkFpSDBOUnp3YjFOUG52LXo5X09jY0NQMm5DTWItRVRzeXJWUlZiWG1HZ21DNmc1VGRqNjFQMHZqRnFiMU52OWVwR21zbzY4SjFJTDNTajIyTnlLT3dIb1E3eXdMbzZhNVl5NkE1SUtDaTgzUzlyOEQ3WkE4dFhWTWVXWk1PbDBoSHZGZzdSZUV30gH3AUFVX3lxTFBQWkItRnZjQ2NzVWlnSmtRT05RTUhfd0ZBVTA2b1ZEYTdVRlQ5RUZFamZxY3JtQ182c21SdjAwMVo1b1Blek1UN3Qzc2hMT0dCWm1sYmdpVFNETG9vV2tJcWhVd0F0QXdfSTJkZkVxclNrU0dON0ktMm1TUzlHU1JzMHBMOW1qakRnOW50YThBcUs3NkhYZ3liUkxWdWdQSVdyUXp0VnVuVmR5Yi1GU2NHQlg4b1Z0RG9MOFdDSmpMdTJ4NGpHUlVjQXNIY2hUWkRFa1paUEd0bGRtV195RDY5M0toTVlJVkVTQkwxdnZZZENTc0REQlk?oc=5" target="_blank" rel="noopener">UIF congela activos de 22 objetivos ligados Los Mayos por lavado de dinero y financiamiento al terrorismo - Infobae</a></h3><p class="fecha">Thu, 18 Sep 2025</p><p class="desc">UIF congela activos de 22 objetivos ligados Los Mayos por lavado de dinero y financiamiento al terrorismo  Infobae...</p></div>
+<div class="card"><span class="badge">Argentina.gob.ar</span><h3><a href="https://news.google.com/rss/articles/CBMiwwFBVV95cUxNYmFRR1F0U3EydTMyaTNPbUU3THRjODRaekNOSi1wREtMZVBsTzNyZ3JkZG52VHhCRVQzOVZCMkpSbXFlZ0xrVnZPaGdWSmk1UXdJNzY4Z3VPak9nTHZ0a09oTGJjcUg2ZWxDdXVvTjRBV2YwRFFxQTA1UnYza3B4SnhNVEc5dGFhc0dVSTNRcFEwTDdZT2pwLXdZTTd6VFdlQ3JUYS1xay11QTIxdWlpczgtZFFmclk1Z3FxdEVxeS1CaWc?oc=5" target="_blank" rel="noopener">FAPLA - Encuentro Anual de Prevención del Lavado de Activos y Financiación del Terrorismo - Argentina.gob.ar</a></h3><p class="fecha">Thu, 03 Oct 2024</p><p class="desc">FAPLA - Encuentro Anual de Prevención del Lavado de Activos y Financiación del Terrorismo  Argentina.gob.ar...</p></div>
+<div class="card"><span class="badge">al día | argentina</span><h3><a href="https://news.google.com/rss/articles/CBMi7wFBVV95cUxOYmR2dmF0OGJVVkp2SDJuQ1d6Qmt6TlBpUHVHb1ZXb2Jqd3FRVGhqblpUSXlyMTJucjlUZkRTRThvYjJoNmJIY0UzSFhtTlZOVEMwbEF2TnpPWHAtRXhDM2hxdjN0NjV1MTV1NlBUejZBb0VpbWs1VHNhNE00X3ZUdFBSbEZNRV9rRVJraXYzem85cjJDSzM0clZfVG9vMEVEcWRhcjFFTzV2TUVEcS1hd2pwQXU4a0ZTZG5lVnA3aEFmdXNaeDBveDNneTNmdGFSRHpoNjIwOXNWMUtCaUFNQ2h3VzFETDdUNkVwSTBBZ9IB9AFBVV95cUxQeTZ3N1RRTDFlcnVxa2QxTEZxSjJtRDcxVkQydXg3M2MyZjZ5ZXVDR0VfWUtsLXlXWE13YWlwTVQ5UTZ3ZjVYZS13Y1lSY0xUV3gxU2trZXNYWDhoQ2NJb0lkNmJ6eEctaWp1MEl0UDAxRjdvbU9ac3B0aVZmQ2ZpV3R2anlCSzUwSW83TGFqdDdxOXhCZWdSNFVZT2lUWFpYY3ZZWXMyQVI0R0dMSUhsNXhRRlduY3VsYnBsN0ZRczI4ZDlNQkdUZDF4RXhHaUx1NUEtNU9sUE93eFNVQzB5Q0d0VXNfc3NxcjctdEpaV0h4Rks0?oc=5" target="_blank" rel="noopener">#Legislación UIF: se actualizan umbrales para la prevención de Lavado de Activos y Financiación del Terrorismo - al día | argentina</a></h3><p class="fecha">Thu, 05 Jun 2025</p><p class="desc">#Legislación UIF: se actualizan umbrales para la prevención de Lavado de Activos y Financiación del Terrorismo  al día | argentina...</p></div>
+</div></div>
+<footer>
+Generado para <strong>AML &middot; BCCL</strong> &nbsp;&middot;&nbsp; Fuente: Google News &nbsp;&middot;&nbsp; 23 de febrero de 2026 - 09:45 hs (ARG)
+</footer>
+<script>
+function showTab(tabId, btn) {
+    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
 </html>
