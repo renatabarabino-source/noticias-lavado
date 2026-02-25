@@ -10,6 +10,36 @@ socket.setdefaulttimeout(30)
 tz_ar = timezone(timedelta(hours=-3))
 now_ar = datetime.now(tz_ar)
 
+# ── 1. DEFINICIÓN DE VARIABLES REFINADAS ──
+BASE_AML = '("lavado de activos" OR "lavado de dinero" OR "compliance" OR "uif" OR "operación sospechosa")'
+NORMATIVA_VIGENTE = '("Inocencia Fiscal" OR "blanqueo" OR "regularización de activos" OR "rulo cambiario")'
+
+# ── 2. FILTROS DE EXCLUSIÓN (Elimina cotizaciones y ruidos de reservas) ──
+# Agregamos ruidos específicos de mercado que no aportan a AML
+NEGATIVE_FILTER = [
+    'cotiza', 'minuto a minuto', 'precio', 'brecha', 'sube', 'baja', 'riesgo país', 
+    'reservas', 'compra el bcra', 'ventas del bcra', 'clima', 'falleció', 'vtv',
+    'fútbol', 'receta', 'salud', 'dental', 'horóscopo'
+]
+
+# Palabras técnicas obligatorias para validar relevancia técnica
+STRICT_KEYWORDS = [
+    'uif', 'gafi', 'bcra', 'arca', 'cnv', 'procelac', 'compliance', 
+    'testaferro', 'maniobra', 'causa', 'imputado', 'procesado', 
+    'sujeto obligado', 'debida diligencia', 'enfoque basado en riesgo',
+    'justificación de fondos', 'origen de fondos', 'ros'
+]
+
+# ── 3. LÓGICA DE BÚSQUEDA AJUSTADA ──
+# Combinamos AML o Normativa, excluyendo expresamente el "ruido" de precio.
+# Buscamos: (Lavado O Normativa) Y (Sitios de Prensa) PERO NO (Cotizaciones)
+query_noticias = f'({BASE_AML} OR {NORMATIVA_VIGENTE}) -cotización -precio -reservas ({SITES_PRENSA})'
+
+# Función fetch_refined modificada para mayor rigor
+def fetch_refined(query, limit, neg_list, mandatory_aml=False):
+    # Forzamos los últimos 5 días
+    url = "https://news.google.com/rss/search?q={}&hl=es-419&gl=AR&ceid=AR:es-419".format(
+        urllib.parse.quote(query + " when:5d")
 # ── 1. DEFINICIÓN DE VARIABLES (Soluciona el NameError) ──
 # Usamos frases exactas entre comillas para mayor precisión
 BASE_AML = '("lavado de activos" OR "lavado de dinero" OR "blanqueo de capitales")'
