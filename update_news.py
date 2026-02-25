@@ -9,6 +9,7 @@ import requests
 socket.setdefaulttimeout(30)
 tz_ar = timezone(timedelta(hours=-3))
 now_ar = datetime.now(tz_ar)
+current_year = str(now_ar.year)  # Captura "2026"
 
 # ── 1. DEFINICIÓN DE VARIABLES ──
 BASE_AML = '("lavado de activos" OR "lavado de dinero" OR "blanqueo de capitales")'
