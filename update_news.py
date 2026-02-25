@@ -165,11 +165,3 @@ HTML_CONTENT = f"""
 
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(HTML_CONTENT)
-
-
-necesito que dejen de aparecer noticias irrelevantes sobre el precio de dolar blue solo es relevante si usan el dolar para hacer rulos o si se estan blanqueando dolares por una normativa o depositos en dolares por lavado.
-cotizaciones no van.
-
-lo mismo lo del bcra cuanto compra el bcra es irrelevante
-
-actualizacines anda perfecto
