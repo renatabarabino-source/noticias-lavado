@@ -25,11 +25,13 @@ NEGATIVE_FILTER = [
     'vía expresa', 'tránsito', 'falleció', 'accidente', 'vtv', 'choque', 'incendio', 'robo'
 ]
 
+# Palabras técnicas obligatorias
 STRICT_KEYWORDS = [
     'uif', 'gafi', 'bcra', 'arca', 'cnv', 'procelac', 'financiero', 'capitales',
     'compliance', 'testaferro', 'maniobra', 'sociedad', 'causa', 'imputado', 'procesado'
 ]
 
+# Portales prensa
 SITES_PRENSA = (
     "site:cronista.com OR site:ambito.com OR site:iprofesional.com OR site:infobae.com OR "
     "site:lanacion.com.ar OR site:clarin.com OR site:tn.com.ar OR site:perfil.com OR "
@@ -80,18 +82,14 @@ def fetch_refined(query, limit, neg_list, mandatory_aml=False):
             seen_titles.add(entry.title)
     return results[:limit]
 
-# ── PROCESAMIENTO DE LAS 2 SOLAPAS (CORREGIDO) ──
-# Se eliminó el OR "dólar blue" suelto para evitar cotizaciones. 
-# Ahora el dólar solo entra si la noticia ya habla de AML.
-news_noticias = fetch_refined(f'{BASE_AML} AND ({SITES_PRENSA})', 25, NEGATIVE_FILTER)
-
+# ── PROCESAMIENTO: SOLO ACTUALIZACIONES ──
 q_act = f'({BASE_AML}) AND ("UIF" OR "GAFI" OR "BCRA" OR "ARCA" OR "CNV") AND ({SITES_PRENSA})'
-news_actualizaciones = fetch_refined(q_act, 6, NEGATIVE_FILTER, mandatory_aml=True)
+news_actualizaciones = fetch_refined(q_act, 12, NEGATIVE_FILTER, mandatory_aml=True)
 
 # ── GENERACIÓN DE HTML ──
 def make_cards(news_list, color_class):
     if not news_list:
-        return '<p style="text-align:center;color:#888;grid-column:1/-1;padding:40px;">No se encontraron noticias técnicas de cumplimiento.</p>'
+        return '<p style="text-align:center;color:#888;grid-column:1/-1;padding:40px;">No se encontraron actualizaciones técnicas de cumplimiento.</p>'
     return "".join([
         f'<div class="card {color_class}"><span class="badge">{n["fuente"]}</span><p class="date">{n["fecha"]}</p><h3><a href="{n["link"]}" target="_blank">{n["titular"]}</a></h3><p class="desc">{n["resumen"]}</p></div>'
         for n in news_list
@@ -107,44 +105,28 @@ HTML_CONTENT = f"""
     <title>AML Monitor - BCCL</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root {{ --azul: #004a80; --dorado: #d4af37; --celeste: #1a73e8; }}
+        :root {{ --azul: #004a80; --dorado: #d4af37; }}
         body {{ font-family: 'Inter', sans-serif; background: #f4f7f9; margin: 0; }}
         header {{ background: var(--azul); color: white; text-align: center; padding: 30px; border-bottom: 4px solid var(--dorado); }}
-        .tabs {{ display: flex; justify-content: center; background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }}
-        .tab-btn {{ padding: 15px 25px; border: none; background: none; cursor: pointer; font-weight: 700; text-transform: uppercase; color: #666; border-bottom: 3px solid transparent; transition: 0.3s; }}
-        .tab-btn.active {{ color: var(--azul); border-bottom-color: var(--azul); }}
-        .page {{ display: none; padding: 20px; }}
-        .page.active {{ display: block; }}
+        .container {{ padding: 20px; }}
         .grid {{ max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }}
-        .card {{ background: white; border-radius: 8px; padding: 20px; border-left: 6px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: 0.2s; }}
+        .card {{ background: white; border-radius: 8px; padding: 20px; border-left: 6px solid var(--dorado); box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: 0.2s; }}
         .card:hover {{ transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }}
-        .c-news {{ border-left-color: var(--celeste); }}
-        .c-updates {{ border-left-color: var(--dorado); }}
         .badge {{ font-size: 0.6rem; font-weight: 900; background: #eee; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; }}
         .date {{ font-size: 0.65rem; color: #999; margin: 5px 0; font-weight: 600; }}
         h3 {{ font-size: 1.05rem; margin: 10px 0; line-height: 1.3; }}
         h3 a {{ text-decoration: none; color: #111; }}
         .desc {{ font-size: 0.85rem; color: #555; line-height: 1.5; }}
-        @media (max-width: 600px) {{ header h1 {{ font-size: 1.4rem; }} .tab-btn {{ padding: 12px 10px; font-size: 0.75rem; }} .grid {{ grid-template-columns: 1fr; }} }}
+        @media (max-width: 600px) {{ header h1 {{ font-size: 1.4rem; }} .grid {{ grid-template-columns: 1fr; }} }}
     </style>
 </head>
 <body>
-    <header><h1>Resumen de Noticias AML 📰</h1><p>Monitor de Cumplimiento &middot; BCCL &middot; {fecha_gen}</p></header>
-    <div class="tabs">
-        <button class="tab-btn active" onclick="showTab('noticias', this)">Noticias</button>
-        <button class="tab-btn" onclick="showTab('actualizaciones', this)">Actualizaciones</button>
+    <header><h1>Actualizaciones AML 📰</h1><p>Monitor Técnico de Cumplimiento &middot; BCCL &middot; {fecha_gen}</p></header>
+    <div class="container">
+        <div class="grid">
+            {make_cards(news_actualizaciones, 'c-updates')}
+        </div>
     </div>
-    <div id="noticias" class="page active"><div class="grid">{make_cards(news_noticias, 'c-news')}</div></div>
-    <div id="actualizaciones" class="page"><div class="grid">{make_cards(news_actualizaciones, 'c-updates')}</div></div>
-    <script>
-        function showTab(t, b) {{
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(t).classList.add('active');
-            b.classList.add('active');
-            window.scrollTo(0,0);
-        }}
-    </script>
 </body>
 </html>
 """
