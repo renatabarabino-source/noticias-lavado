@@ -17,15 +17,21 @@ BASE_AML = '("lavado de activos" OR "lavado de dinero" OR "blanqueo de capitales
 # ── 2. FILTROS DE EXCLUSIÓN (Basado en tus capturas) ──
 # Eliminamos salud, deportes, clima y policiales de calle
 NEGATIVE_FILTER = [
-    'dental', 'dientes', 'odontologia', 'aguacate', 'receta', 'futbol', 'clima',
-    'vinagre', 'almohada', 'mancha', 'jabon', 'limpieza', 'ropa', 'suavizante',
-    'lavarropas', 'pelo', 'cutis', 'dieta', 'cocina', 'alianza lima', 'senamhi',
-    'veterinaria', 'temperaturas', 'vía expresa', 'tránsito', 'falleció', 'accidente', 'dolar blue', 'reservas bcra', 'vtv'
-]
-
-POLICIAL_NEG = NEGATIVE_FILTER + [
-    'policía', 'policial', 'crimen', 'asesinato', 'robo', 'detenido', 'allanamiento',
-    'tiroteo', 'sicario', 'sicariato', 'homicidio', 'asalto', 'secuestro'
+    # Cotizaciones y BCRA (Lo que no querés ver)
+    'dolar blue', 'reservas bcra', 'cotiza', 'cotización', 'precio', 'minuto a minuto', 
+    'brecha', 'riesgo país', 'compra el bcra', 'ventas del bcra', 'dolar hoy', 'sube', 'baja',
+    
+    # Higiene, Salud y Hogar
+    'dental', 'dientes', 'odontologia', 'aguacate', 'receta', 'vinagre', 'almohada', 
+    'mancha', 'jabon', 'limpieza', 'ropa', 'suavizante', 'lavarropas', 'pelo', 'cutis', 
+    'dieta', 'cocina', 'veterinaria', 'truco casero', 'remedio',
+    
+    # Deportes, Espectáculos y Local (Perú/Arg)
+    'futbol', 'alianza lima', 'senamhi', 'temperaturas', 'clima', 'pronóstico', 
+    'espectáculo', 'famosos', 'messi', 'partido', 'gol',
+    
+    # Policiales de calle y Tránsito
+    'vía expresa', 'tránsito', 'falleció', 'accidente', 'vtv', 'choque', 'incendio', 'robo'
 ]
 
 # Palabras técnicas que DEBEN estar para validar que es una noticia de AML
