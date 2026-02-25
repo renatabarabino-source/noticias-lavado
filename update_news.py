@@ -20,7 +20,7 @@ NEGATIVE_FILTER = [
     'dental', 'dientes', 'odontologia', 'aguacate', 'receta', 'futbol', 'clima',
     'vinagre', 'almohada', 'mancha', 'jabon', 'limpieza', 'ropa', 'suavizante',
     'lavarropas', 'pelo', 'cutis', 'dieta', 'cocina', 'alianza lima', 'senamhi',
-    'veterinaria', 'temperaturas', 'vía expresa', 'tránsito', 'falleció', 'accidente'
+    'veterinaria', 'temperaturas', 'vía expresa', 'tránsito', 'falleció', 'accidente', 'dolar blue', 'reservas bcra', 'vtv'
 ]
 
 POLICIAL_NEG = NEGATIVE_FILTER + [
